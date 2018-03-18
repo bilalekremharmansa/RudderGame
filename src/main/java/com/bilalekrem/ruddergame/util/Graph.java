@@ -1,5 +1,7 @@
 package com.bilalekrem.ruddergame.util;
 
+import com.bilalekrem.ruddergame.game.Game.Piece;
+
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
@@ -7,6 +9,9 @@ import java.util.Objects;
 import java.util.HashMap;
 import java.util.Collections;
 import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -22,6 +27,8 @@ import java.util.stream.Collectors;
  */
 public class Graph {
 
+    private static final Logger LOGGER = LogManager.getLogger(Graph.class);
+
     private Set<Edge> edges;
     private Map<String, Node> vertices;
     private Map<Node, Set<Node>> adjacencyList;
@@ -36,7 +43,7 @@ public class Graph {
     }
 
     public void addVertex(Segment segment, int level) {
-        Node node = new Node(segment, level, true);
+        Node node = new Node(segment, level);
         vertices.put(node.toString(), node);
     }
 
@@ -47,7 +54,6 @@ public class Graph {
         addEdge(from, to);
     }
 
-    
     private void addEdge(Node from, Node to) throws NoSuchNodeException {
         Set<Node> adjacenciesFrom = getAdjacenciesAsNode(from.toString());
         Set<Node> adjacenciesTo = getAdjacenciesAsNode(to.toString());
@@ -57,6 +63,17 @@ public class Graph {
         
         adjacenciesFrom.add(to);
         adjacenciesTo.add(from);
+    }
+
+    public boolean putPiece(String vertex, Piece piece) throws NoSuchNodeException {
+        Node node = getNode(vertex);
+
+        if(node.available()) {
+            node.piece = piece;
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -109,18 +126,21 @@ public class Graph {
     * The Node class represents vertices of a Graph with Segment code and levels.
     */
     public static class Node {
-        Segment segment;
-        boolean available;
-        int level;
+        private final Segment segment;
+        private final int level;
+        private Piece piece;
 
-        private Node(Segment segment, int level, boolean available) {
+        private Node(Segment segment, int level) {
             this.segment = segment;
             /**
              * if segment is CENTER, no matter that the value of level.
              * still sets level.
              */
             this.level = level;
-            this.available = available;
+        }
+
+        private boolean available() {
+            return piece == null;
         }
 
         public static String parseString(Segment segment, int level) {
@@ -140,10 +160,10 @@ public class Graph {
 
             Node n = (Node)o;
             
-              /**
-             * if segment is CENTER, no matter that the value of level.
-             * Otherwise need to sure their, both, levels are same.
-             */
+            /**
+            * if segment is CENTER, no matter that the value of level.
+            * Otherwise need to sure their, both, levels are same.
+            */
             if (this.segment == n.segment && this.segment == Segment.CENTER) return true;
             else if (this.segment == n.segment && this.level == n.level) return true;
 
