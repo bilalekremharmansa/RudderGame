@@ -29,12 +29,12 @@ public class Graph {
 
     private static final Logger LOGGER = LogManager.getLogger(Graph.class);
 
-    private Set<Edge> edges;
-    private Map<Location, Node> vertices;
-    private Map<Node, Set<Node>> adjacencyList;
+    protected Set<Edge> edges;
+    protected Map<Location, Node> vertices;
+    protected Map<Node, Set<Node>> adjacencyList;
 
-    private static final int INIT_EDGE_CAPACITY=64;
-    private static final int INIT_VERTICES_CAPACITY=33;
+    protected static final int INIT_EDGE_CAPACITY=64;
+    protected static final int INIT_VERTICES_CAPACITY=33;
 
     public Graph() {
         edges = new HashSet<>(INIT_EDGE_CAPACITY);
@@ -54,7 +54,7 @@ public class Graph {
         addEdge(from, to);
     }
 
-    private void addEdge(Node from, Node to) throws NoSuchNodeException {
+    protected void addEdge(Node from, Node to) throws NoSuchNodeException {
         Set<Node> adjacenciesFrom = getAdjacenciesAsNode(from.location);
         Set<Node> adjacenciesTo = getAdjacenciesAsNode(to.location);
        
@@ -95,6 +95,22 @@ public class Graph {
         return false;
     }
 
+    /**
+     * This methods can be used after attach a Piece to Node. Basicly, returns attached Piece 
+     * in @param location. 
+     * 
+     * If there is no Piece that attached. Just return nulls.
+     * 
+     * If given location is not exist or could not found throws NoSuchNodeException
+     */
+    public Piece getAttachedPiece(Location location) throws NoSuchNodeException {
+        Node node = getNode(location);
+        
+        if(!node.available()) return node.piece;
+        
+        return null;
+    }
+
     public boolean isNodeAvailable(Location vertex) throws NoSuchNodeException {
         return getNode(vertex).available();
     }
@@ -102,7 +118,7 @@ public class Graph {
     /**
      * @param vertex 
      */
-    private Graph.Node getNode(Location vertex) throws NoSuchNodeException {
+    protected Graph.Node getNode(Location vertex) throws NoSuchNodeException {
         Graph.Node node = vertices.get(vertex);
         if (node == null )
             throw new NoSuchNodeException("There is no vertex as " + vertex);
@@ -114,7 +130,7 @@ public class Graph {
         return adjs.stream().map( (node) -> node.location ).collect(Collectors.toCollection(HashSet::new));
     }
 
-    private Set<Node> getAdjacenciesAsNode(Location vertex) throws NoSuchNodeException {
+    protected Set<Node> getAdjacenciesAsNode(Location vertex) throws NoSuchNodeException {
         Node node = getNode(vertex);
 
         /**

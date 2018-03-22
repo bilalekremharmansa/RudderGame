@@ -9,12 +9,20 @@ import com.bilalekrem.ruddergame.util.Graph.NoSuchNodeException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Queue;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.LinkedList;
+
 public class RudderGame extends Game{
 
     private static final Logger LOGGER = LogManager.getLogger(RudderGame.class);
 
-    public RudderGame() {
+    private Queue<Location> capturedPieces;
 
+
+    public RudderGame() {
+        new LinkedList<>();
     }
     
 	@Override
@@ -75,6 +83,7 @@ public class RudderGame extends Game{
         for (Location[] locs : locations) {
             for (Location loc : locs) {
                 board.addVertex(loc);
+                this.locations.add(loc);
             }
         }
         
@@ -186,38 +195,104 @@ public class RudderGame extends Game{
 	}
 
 	@Override
-	boolean canMove(Player player, Location current, Location target) {
+	MoveType canMove(Player player, Location current, Location target) {
         // if user has a Piece at current
         long currentExist = player.pieces.stream().filter( (piece) -> piece.location.equals(current) ).count();
         if(currentExist>0) {
             LOGGER.info("Player {} does not have a Piece on {}", player.name, current);
-            return false;
+            return MoveType.NONE;
         }
 
-        // checking target
         try {
-            // if target node is empty
+            // Check is target empty or available to move ?
             boolean isNodeAvailable = board.isNodeAvailable(target);
+
             if(isNodeAvailable) {
-                // if target node and current node are adjoints
+                // If target node and current node are neighbour.
                 boolean contains = board.getAdjacencies(current).contains(target);
                 if(contains) {
-                    return true;
+                    return MoveType.MOVE;
+                }
+
+                // Can @param player capture by jumping over opponent pieces ? 
+                Location between = getBetween(current, target);
+                if(between != null && board.getAttachedPiece(between).type != player.pieceType) {
+                    capturedPieces.add(between);
+                    return MoveType.CAPTURE;
                 }
             }
         } catch(NoSuchNodeException ex ) {
             LOGGER.error("There is no vertex as {}", target);
-            return false;
+        }
+		return MoveType.NONE;
+    }
+    
+    /**
+     * This method returns a Location if a Location exists between @param firstLocation
+     * and @param secondLocation, if there is no valid Location returns null.
+     * 
+     */
+    private Location getBetween(Location firstLocation, Location secondLocation) {
+        /** 
+         * Location that between two locations can be found like 
+         * -get first location' neighbours 
+         * -get second location' neighbours. 
+         * -Compare those and find the common elements.
+         * 
+         * common elements in two collection: stackoverflow.com/a/5943349/5929406
+         * 
+         * However, we have a special case, if founded location is CENTER. In that case, there
+         * must be a straight line from firstLocation to secondLocation.
+         */
+        try {
+            Set<Location> neighbour = board.getAdjacencies(firstLocation);
+            Set<Location> secondNeighbour = board.getAdjacencies(secondLocation);   
+            neighbour.retainAll(secondNeighbour);
+
+            for (Location loc : neighbour) {
+
+                if(loc.segment == Segment.CENTER && 
+                    Math.abs(firstLocation.segment.compareTo(secondLocation.segment)) == 4 ) {
+                     /**
+                     * As we know a Segment can be A,B,C D,E,F,G,H and we know that there is a 
+                     * straight line from A to E, B to F, D to H and etc. We can use String comparison to
+                     * determine that if firstLocation and secondLocation make a straight
+                     * line ? If comparing results as 4 or -4 that means they are neighbour. 
+                     * 
+                     * Otherwise, loc == Segment.CENTER is not acceptable.
+                     */
+                    
+                     return loc;
+                } else if (loc.segment != Segment.CENTER) { 
+                    //if common neighbour is not Center, we can say that this location is valid.
+                    return loc;
+                }
+                
+            }
+
+        } catch (NoSuchNodeException e) {
+            LOGGER.error(e.getMessage());
         }
 
-		return false;
-	}
+        return null;
+    }
 
 	@Override
 	boolean move(Player player, Location current, Location target) {
 		return false;
 	}
 
+    /**
+     * mandatoryMove method checks existing of mandatory move for @param player.
+     * 
+     * As RudderGame rule, if player can capture oppenent' piece, the player 'has to'
+     * capture that piece. Of course, if there are several choices, player is free to choose
+     * which Piece will capture. This is mandatory.
+     */
+    private boolean mandatoryMove(Player player) {
+        return false;
+    }
+       
 
 
 }

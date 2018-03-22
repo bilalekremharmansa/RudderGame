@@ -23,12 +23,15 @@ public abstract class Game {
     Graph board;
     List<Move> moves;
 
+    protected Set<Location> locations;
+
     /**
      * Default constructor, constructs collections
      */
     public Game() {
         players = new HashSet<>();
         moves = new ArrayList<>();
+        locations = new HashSet<>();
     }
 
     /** 
@@ -59,7 +62,7 @@ public abstract class Game {
      * @param current to
      * @param target 
      */
-    abstract boolean canMove(Player player, Location current, Location target);
+    abstract MoveType canMove(Player player, Location current, Location target);
 
     /**
      * @param player makes a move from @param current to @param target.
@@ -73,6 +76,9 @@ public abstract class Game {
      * 
      * @author Bilal Ekrem Harmansa
      */
+    public static enum MoveType {
+        MOVE, CAPTURE, NONE
+    }
     public class Move {
         int doerID; // the player who does the move
         Location previous; // constructed segment-level

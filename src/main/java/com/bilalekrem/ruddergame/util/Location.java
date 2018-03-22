@@ -9,8 +9,8 @@ package com.bilalekrem.ruddergame.util;
  * @author Bilal Ekrem Harmansa
  */
 public class Location {
-    final Segment segment;
-    final int level;
+    public final Segment segment;
+    public final int level;
 
     protected int hash;
     
