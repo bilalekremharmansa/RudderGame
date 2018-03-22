@@ -30,7 +30,7 @@ public class Graph {
     private static final Logger LOGGER = LogManager.getLogger(Graph.class);
 
     private Set<Edge> edges;
-    private Map<String, Node> vertices;
+    private Map<Location, Node> vertices;
     private Map<Node, Set<Node>> adjacencyList;
 
     private static final int INIT_EDGE_CAPACITY=64;
@@ -42,21 +42,21 @@ public class Graph {
         adjacencyList = new HashMap<>(INIT_VERTICES_CAPACITY);
     }
 
-    public void addVertex(Segment segment, int level) {
-        Node node = new Node(segment, level);
-        vertices.put(node.toString(), node);
+    public void addVertex(Location location) {
+        Node node = new Node(location);
+        vertices.put(node.location, node);
     }
 
-    public void addEdge(Segment segmentFrom, int levelFrom, Segment segmentTo, int levelTo) throws NoSuchNodeException{
-        Node from = getNode(Node.parseString(segmentFrom, levelFrom));
-        Node to = getNode(Node.parseString(segmentTo, levelTo));
+    public void addEdge(Location source, Location target) throws NoSuchNodeException{
+        Node from = getNode(source);
+        Node to = getNode(target);
 
         addEdge(from, to);
     }
 
     private void addEdge(Node from, Node to) throws NoSuchNodeException {
-        Set<Node> adjacenciesFrom = getAdjacenciesAsNode(from.toString());
-        Set<Node> adjacenciesTo = getAdjacenciesAsNode(to.toString());
+        Set<Node> adjacenciesFrom = getAdjacenciesAsNode(from.location);
+        Set<Node> adjacenciesTo = getAdjacenciesAsNode(to.location);
        
         Edge e = new Edge(from, to);
         edges.add(e);
@@ -65,10 +65,29 @@ public class Graph {
         adjacenciesTo.add(from);
     }
 
-    public boolean putPiece(String vertex, Piece piece) throws NoSuchNodeException {
-        Node node = getNode(vertex);
+    /**
+     * This method attach Piece's to graph Node's. Each node constructed with a Location.
+     * Only thing that Piece know is location, Piece' do not have an access to Node. This method
+     * is a way of connecting them together. 
+     * 
+     * @param previousLocation previous location of Piece. If a Piece connected a Node before this call,
+     * breaks the old connection between the Node and the Type
+     * 
+     * @param piece is needed to get the location of new Piece. When new location of found in a Node. Connects the
+     * Node and the piece by calling node.piece = piece
+     */
+    public boolean attachPiece(Piece piece, Location previousLocation) throws NoSuchNodeException {
+        if(piece == null) return false;
+    
+        Node node = getNode(piece.getLocation());
 
         if(node.available()) {
+            /** if previous location exists */
+            if(previousLocation != null) {
+                vertices.values().stream().filter( (n) -> n.location.equals(previousLocation) ).map( (n) -> n.piece = null);
+            } 
+
+            // attach the piece with the node that piece located.
             node.piece = piece;
             return true;
         }
@@ -76,22 +95,26 @@ public class Graph {
         return false;
     }
 
+    public boolean isNodeAvailable(Location vertex) throws NoSuchNodeException {
+        return getNode(vertex).available();
+    }
+
     /**
      * @param vertex 
      */
-    private Graph.Node getNode(String vertex) throws NoSuchNodeException {
+    private Graph.Node getNode(Location vertex) throws NoSuchNodeException {
         Graph.Node node = vertices.get(vertex);
         if (node == null )
             throw new NoSuchNodeException("There is no vertex as " + vertex);
         return node;
     }
 
-    public Set<String> getAdjacencies(String vertex) throws NoSuchNodeException {
+    public Set<Location> getAdjacencies(Location vertex) throws NoSuchNodeException {
         Set<Node> adjs = getAdjacenciesAsNode(vertex);
-        return adjs.stream().map( (node) -> node.toString() ).collect(Collectors.toCollection(HashSet::new));
+        return adjs.stream().map( (node) -> node.location ).collect(Collectors.toCollection(HashSet::new));
     }
 
-    private Set<Node> getAdjacenciesAsNode(String vertex) throws NoSuchNodeException {
+    private Set<Node> getAdjacenciesAsNode(Location vertex) throws NoSuchNodeException {
         Node node = getNode(vertex);
 
         /**
@@ -104,7 +127,7 @@ public class Graph {
         return adj;
     }
 
-    public Map<String, Node> getVertices() { 
+    public Map<Location, Node> getVertices() { 
         return Collections.unmodifiableMap(vertices); 
     } 
  
@@ -124,32 +147,26 @@ public class Graph {
 
     /**
     * The Node class represents vertices of a Graph with Segment code and levels.
-    */
+     */
     public static class Node {
-        private final Segment segment;
-        private final int level;
+        private final Location location;
         private Piece piece;
 
         private Node(Segment segment, int level) {
-            this.segment = segment;
-            /**
-             * if segment is CENTER, no matter that the value of level.
-             * still sets level.
-             */
-            this.level = level;
+            this(new Location(segment, level));        
+        }
+
+        private Node(Location location) {
+            this.location = location;
         }
 
         private boolean available() {
             return piece == null;
         }
-
-        public static String parseString(Segment segment, int level) {
-            return segment + "-" + level;
-        }
     
         @Override
         public String toString(){
-            return segment.toString() + '-' + level;
+            return location.toString();
         }
 
         @Override
@@ -159,20 +176,14 @@ public class Graph {
             if ( !(o instanceof Node) ) return false;
 
             Node n = (Node)o;
-            
-            /**
-            * if segment is CENTER, no matter that the value of level.
-            * Otherwise need to sure their, both, levels are same.
-            */
-            if (this.segment == n.segment && this.segment == Segment.CENTER) return true;
-            else if (this.segment == n.segment && this.level == n.level) return true;
-
+        
+            if (this.location.equals(n.location)) return true;
             return false; 
         }
 
         @Override
         public int hashCode() {
-            return 31*segment.ordinal() + 37*level;
+            return this.location.hashCode();
         }
         
     }
