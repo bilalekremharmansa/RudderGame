@@ -22,7 +22,7 @@ public class RudderGame extends Game{
 
 
     public RudderGame() {
-        new LinkedList<>();
+        capturedPieces = new LinkedList<>(); // forgot assigning
     }
     
 	@Override
@@ -103,6 +103,18 @@ public class RudderGame extends Game{
                 
             }
         }
+        /**
+         * The loop below build link between CENTER and Segments which 
+         * Segments level are 1(locs[0])
+         */
+        for (Location[] locs : locations) {
+            try {
+                board.addEdge(center, locs[0]);
+            }catch(NoSuchNodeException ex){
+                LOGGER.error(ex.getMessage());
+            }
+        }
+
         
         /**
          * The loop below builds link Locations on same 'level'
@@ -159,33 +171,44 @@ public class RudderGame extends Game{
         this.players.add(playerOne);
         this.players.add(playerTwo);
 
-        // playerOne pieces're placed on Segments A,B,C,D
-        Segment[] segments = Segment.values();
+        // Segments A to H not included CENTER.
+        Segment[] segments = new Segment[]{
+            Segment.A, Segment.B, Segment.C, Segment.D,
+            Segment.E, Segment.F, Segment.G, Segment.H};
         int index = 0;
 
-        for (int i = 1; i <= LEVEL; i++) {
-            Location location = new Location(segments[index++], i);
-            Piece piece = new Piece(location, playerOne.pieceType);
-
-            try {
-                board.attachPiece(piece, null); // first call, no prev location
-                playerOne.pieces.add(piece);
-            } catch (NoSuchNodeException ex) {
-                LOGGER.error("Could not find vertex v {}", location);
+        // playerOne pieces're placed on Segments A,B,C,D
+        for (int i = 0; i < segments.length / 2; i++) {
+            for (int j = 1; j <= LEVEL; j++) {
+                Location location = new RudderGameLocation(segments[index], j);
+                Piece piece = new Piece(location, playerOne.pieceType);
+    
+                try {
+                    board.attachPiece(piece, null); // first call, no prev location
+                    playerOne.pieces.add(piece);
+                } catch (NoSuchNodeException ex) {
+                    LOGGER.error("Could not find vertex v {}", location);
+                }
             }
+            index++;
         }
+
+        
         
         // playerTwo pieces're placed on Segments E,F,G,H
-        for (int i = 1; i <= LEVEL; i++) {
-            Location location = new Location(segments[index++], i);
-            Piece piece = new Piece(location, playerTwo.pieceType);
-
-            try {
-                board.attachPiece(piece, null);
-                playerTwo.pieces.add(piece);
-            } catch (NoSuchNodeException ex) {
-                LOGGER.error("There is no vertex as {}", location);
+        for (int i = 0; i < segments.length / 2; i++) {
+            for (int j = 1; j <= LEVEL; j++) {
+                Location location = new RudderGameLocation(segments[index], j);
+                Piece piece = new Piece(location, playerTwo.pieceType);
+    
+                try {
+                    board.attachPiece(piece, null);
+                    playerTwo.pieces.add(piece);
+                } catch (NoSuchNodeException ex) {
+                    LOGGER.error("There is no vertex as {}", location);
+                }
             }
+            index++;
         }
     }
 
@@ -198,7 +221,7 @@ public class RudderGame extends Game{
 	MoveType canMove(Player player, Location current, Location target) {
         // if user has a Piece at current
         long currentExist = player.pieces.stream().filter( (piece) -> piece.location.equals(current) ).count();
-        if(currentExist>0) {
+        if(currentExist<1) {
             LOGGER.info("Player {} does not have a Piece on {}", player.name, current);
             return MoveType.NONE;
         }
@@ -210,6 +233,7 @@ public class RudderGame extends Game{
             if(isNodeAvailable) {
                 // If target node and current node are neighbour.
                 boolean contains = board.getAdjacencies(current).contains(target);
+                System.out.println("adj--" + board.getAdjacencies(current));
                 if(contains) {
                     return MoveType.MOVE;
                 }
@@ -231,6 +255,7 @@ public class RudderGame extends Game{
      * This method returns a Location if a Location exists between @param firstLocation
      * and @param secondLocation, if there is no valid Location returns null.
      * 
+     * Does this code smells ?
      */
     private Location getBetween(Location firstLocation, Location secondLocation) {
         /** 
@@ -244,13 +269,48 @@ public class RudderGame extends Game{
          * However, we have a special case, if founded location is CENTER. In that case, there
          * must be a straight line from firstLocation to secondLocation.
          */
+        if(firstLocation.equals(secondLocation)) return null;
+        
         try {
             Set<Location> neighbour = board.getAdjacencies(firstLocation);
             Set<Location> secondNeighbour = board.getAdjacencies(secondLocation);   
             neighbour.retainAll(secondNeighbour);
 
             for (Location loc : neighbour) {
-
+                /**
+                 * If statements below are not written like if-else if-else if,
+                 * First of all, there is no point to that. Each if condition comes true, code 
+                 * returns loc and do nothing else in this method. Otherwise, need to check other
+                 * conditions as well so we just keep it like that.
+                 * Secondly, if we do that, if-elseif-elseif, secondCondition and thirdCondition
+                 * would've conflicted. Assume that, 
+                 * player1 piece at CENTER
+                 * player2 piece at E1
+                 * A1 is free
+                 * player2 wants to move E1 to A1. We expect that thirdCondition will take care with
+                 * this case. 
+                 * (loc.segment == Segment.CENTER && Math.abs(firstLocation.segment.compareTo(secondLocation.segment)) == 4)
+                 * However, secondCondition takes care with this one so I've just avoided from this
+                 * situtation in this way.
+                 */
+                if (firstLocation.segment == secondLocation.segment &&
+                        loc.level == ((firstLocation.level + secondLocation.level) / 2)) {
+                    return loc;
+                }
+                if (firstLocation.level == secondLocation.level) {
+                    /**
+                     * If they are on same level.
+                     * String comparison to determine that if firstLocation and secondLocation 
+                     * make a straight line ? If comparing result is 1 or -1 
+                     * i.e. A-B, B-C,....,H-A
+                     */
+                    if ( Math.abs(firstLocation.segment.compareTo(secondLocation.segment)) == 1) {
+                        return loc;
+                    }else if ( (firstLocation.segment == Segment.H && secondLocation.segment == Segment.A) ||
+                        firstLocation.segment == Segment.A && secondLocation.segment == Segment.H  ) {
+                        return loc;
+                    }
+                }
                 if(loc.segment == Segment.CENTER && 
                     Math.abs(firstLocation.segment.compareTo(secondLocation.segment)) == 4 ) {
                      /**
@@ -263,7 +323,8 @@ public class RudderGame extends Game{
                      */
                     
                      return loc;
-                } else if (loc.segment != Segment.CENTER) { 
+                }
+                if (loc.segment != Segment.CENTER) { 
                     //if common neighbour is not Center, we can say that this location is valid.
                     return loc;
                 }

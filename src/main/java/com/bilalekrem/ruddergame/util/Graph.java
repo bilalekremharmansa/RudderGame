@@ -84,7 +84,9 @@ public class Graph {
         if(node.available()) {
             /** if previous location exists */
             if(previousLocation != null) {
-                vertices.values().stream().filter( (n) -> n.location.equals(previousLocation) ).map( (n) -> n.piece = null);
+                // I've learned how not map works :)
+                vertices.values().stream().filter( (n) -> n.location.equals(previousLocation) ).
+                    findAny().ifPresent( (n) -> n.piece = null);
             } 
 
             // attach the piece with the node that piece located.
