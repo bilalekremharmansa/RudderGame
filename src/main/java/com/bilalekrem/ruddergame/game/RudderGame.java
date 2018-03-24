@@ -20,13 +20,19 @@ public class RudderGame extends Game{
 
     private Queue<Location> capturedPieces;
 
+    /**
+     * This field can be changed in move. If move(Move) fails and returns false
+     * because of existing of mantary move and user is trying to do just a 
+     * MoveType.MOVE then this flag sets.
+     */
+    private boolean MANDATORY_MOVE_EXIST = false;
 
     public RudderGame() {
         capturedPieces = new LinkedList<>(); // forgot assigning
     }
     
 	@Override
-	Graph initiliazeBoard() {
+	protected Graph initiliazeBoard() {
         board = new Graph();
         
         /** either, i dont like to write lines below. */
@@ -153,7 +159,7 @@ public class RudderGame extends Game{
     }
     
     @Override
-	void initiliazeGame(Player... players) {
+	protected void initiliazeGame(Player... players) {
         // using hashCode as game id
         this.ID = hashCode();
 
@@ -213,12 +219,20 @@ public class RudderGame extends Game{
     }
 
 	@Override
-	boolean isDefeated(Player player) {
+	protected boolean isDefeated(Player player) {
 		return player.pieces.size()<=3;
 	}
 
 	@Override
-	MoveType canMove(Player player, Location current, Location target) {
+	protected MoveType determineMoveType(Move move) {
+        // todo: is player's turn ?
+
+        Player player = players.stream().filter((p) -> p.ID ==move.doerID).findFirst().orElse(null);
+        if(player == null) return MoveType.NONE; // player not exist.
+
+        Location current = move.from; // current location
+        Location target = move.to; // target location
+
         // if user has a Piece at current
         long currentExist = player.pieces.stream().filter( (piece) -> piece.location.equals(current) ).count();
         if(currentExist<1) {
@@ -337,15 +351,36 @@ public class RudderGame extends Game{
         return null;
     }
 
+    /**
+     * Addition information about this method, if there is a mandatory move and user
+     * is doing that something lower priority. This methods sets MANDATORY_MOVE_EXIST flag sets.
+     */
 	@Override
-	Move move(Player player, Location current, Location target) {
-        MoveType moveType = canMove(player, current, target);
+	protected boolean move(Move move) {
+        MoveType moveType = determineMoveType(move);
 
-        if(moveType == MoveType.NONE || moveType == MoveType.MOVE) {
-            // todo: check is there a mandatory move ? if yes, why i got NONE or MOVE ? 
-            // in both case think that do i need to create empty Move ? 
-            if(mandatoryMove(player)) return new Move().type(MoveType.MANDATORY_EXIST);
-        }         
+        Player player = players.stream().filter((p) -> p.ID ==move.doerID).findFirst().orElse(null);
+        if(player == null) return false; // player not exist.
+
+        Location current = move.from; // current location
+        Location target = move.to; // target location
+
+        MANDATORY_MOVE_EXIST = false; // reset mandatory flag.
+
+        //there was a bug the lines below, fixed in a way.
+        if(moveType == MoveType.NONE) {
+            if(mandatoryMove(player)){
+                MANDATORY_MOVE_EXIST = true;
+            }
+            return false;
+        }
+
+        if(moveType == MoveType.MOVE) {
+            if(mandatoryMove(player)){
+                MANDATORY_MOVE_EXIST = true;
+                return false;
+            }
+        }
         
         // Moving process
         for (Piece piece : player.pieces) {
@@ -356,7 +391,7 @@ public class RudderGame extends Game{
                 }catch(NoSuchNodeException ex) {
                     // probably will never get this error. canMove() already check existing of current and target.
                     LOGGER.fatal("In MOVE " + ex.getMessage());
-                    return new Move().type(MoveType.NONE);
+                    return false;
                 }
             }
         }
@@ -395,8 +430,10 @@ public class RudderGame extends Game{
                         });
             });
         }
-
-        return new Move().doer(player.ID).previous(current).current(target).type(moveType);
+        
+        // Just before finishing the method, dont forget the change move type. It's not assigned yet.
+        move.type(moveType);
+        return true;
 	}
 
     /**
@@ -436,7 +473,8 @@ public class RudderGame extends Game{
                         // if there is a empty Location in opponentPieceNeighbours then
                         // mandatory move is exist!
                         for (Location locOpponentNeighbour : opponentPieceNeighbours) {
-                            if(canMove(player, playerPiece.location, locOpponentNeighbour) == MoveType.CAPTURE) 
+                            Move move = new Move().doer(player.ID).from(playerPiece.location).to(locOpponentNeighbour);
+                            if(determineMoveType(move) == MoveType.CAPTURE) 
                                 return true;
                         }
                     }
@@ -449,6 +487,8 @@ public class RudderGame extends Game{
         return false;
     }
        
-
+    public boolean checkMandatoryFlag() {
+        return MANDATORY_MOVE_EXIST;
+    }
 
 }

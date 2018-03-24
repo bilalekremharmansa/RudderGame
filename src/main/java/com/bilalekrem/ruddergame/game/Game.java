@@ -28,7 +28,7 @@ public abstract class Game {
     /**
      * Default constructor, constructs collections
      */
-    public Game() {
+    protected Game() {
         players = new HashSet<>();
         moves = new ArrayList<>();
         locations = new HashSet<>();
@@ -38,7 +38,7 @@ public abstract class Game {
      * Each game can build a game board in its way. To make
      * that happen this method marked as abstract.
      */
-    abstract Graph initiliazeBoard();
+    abstract protected Graph initiliazeBoard();
 
     /** 
      * It should call after initiliazeGame(). When board is ready
@@ -46,7 +46,7 @@ public abstract class Game {
      * preparation before game starts.
      *
      */
-    abstract void initiliazeGame(Player... players);
+    abstract protected void initiliazeGame(Player... players);
 
     /**
      * Each game can be different ends. As Rudder Game rule 
@@ -55,36 +55,42 @@ public abstract class Game {
      * board, the player is defeated.
      * 
      */
-    abstract boolean isDefeated(Player player);
+    abstract protected boolean isDefeated(Player player);
 
     /**
-     * Basicly, Can a player make a move from
-     * @param current to
-     * @param target 
-     */
-    abstract MoveType canMove(Player player, Location current, Location target);
-
-    /**
-     * @param player makes a move from @param current to @param target.
+     * This method determines the move type. Like, Can this move happen ?
+     * What will happen when this Move is done ? Just a move ? Or does it
+     * capture ?
      * 
-     * @return Move object that contains information about this move. No matter that
-     * move is valid or not valid. If move is not valid, move.type equals to 
-     * MoveType.NONE. 
+     * @param move the move object will be determined.
+     * 
+     * @return returns move type of given move object as parameter.
      */
-    abstract Move move(Player player, Location current, Location target);
+    abstract protected MoveType determineMoveType(Move move);
 
     /**
-     * Move class represents players moves in a game.
+     * move(Move) method performs the necessary operations when user make a
+     * Move.
+     * 
+     * @param move the move object will be performed.
+     * 
+     * @return result of this operation, If this Move is valid and made succesfully
+     * returns true, otherwise returns false. 
+     */
+    abstract protected boolean move(Move move);
+
+    /**
+     * Move class represents players moves in a game 'from' one place 'to' another.
      * 
      * @author Bilal Ekrem Harmansa
      */
     public static enum MoveType {
-        MOVE, CAPTURE, NONE, MANDATORY_EXIST
+        MOVE, CAPTURE, NONE
     }
     public class Move {
         int doerID; // the player who does the move
-        Location previous; // constructed segment-level
-        Location current; // constructed segment-level
+        Location from; // constructed segment-level
+        Location to; // constructed segment-level
         MoveType type;
 
         public Move doer(int ID){
@@ -92,13 +98,13 @@ public abstract class Game {
             return this;
         }
 
-        public Move previous(Location previous){
-            this.previous = previous;
+        public Move from(Location from){
+            this.from = from;
             return this;
         }
 
-        public Move current(Location current){
-            this.current = current;
+        public Move to(Location to){
+            this.to = to;
             return this;
         }
 
@@ -107,11 +113,16 @@ public abstract class Game {
             return this;
         }
 
+        // if there is a value assigned to type, that means this is valid move.
+        public boolean validate() {
+            return type != null;
+        }
+
         @Override
         public String toString() {
             String playerName = players.stream().filter( (p) -> p.ID == doerID).findFirst().map( (p) -> p.name).orElse("Unknown player");
             return playerName + "moved a piece: " + 
-                    previous.toString() + "-->" + current.toString();
+                    from.toString() + "-->" + to.toString();
         }
     }
 
