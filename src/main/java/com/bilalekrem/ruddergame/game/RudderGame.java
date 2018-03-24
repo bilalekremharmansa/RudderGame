@@ -233,7 +233,6 @@ public class RudderGame extends Game{
             if(isNodeAvailable) {
                 // If target node and current node are neighbour.
                 boolean contains = board.getAdjacencies(current).contains(target);
-                System.out.println("adj--" + board.getAdjacencies(current));
                 if(contains) {
                     return MoveType.MOVE;
                 }
@@ -339,18 +338,114 @@ public class RudderGame extends Game{
     }
 
 	@Override
-	boolean move(Player player, Location current, Location target) {
-		return false;
+	Move move(Player player, Location current, Location target) {
+        MoveType moveType = canMove(player, current, target);
+
+        if(moveType == MoveType.NONE || moveType == MoveType.MOVE) {
+            // todo: check is there a mandatory move ? if yes, why i got NONE or MOVE ? 
+            // in both case think that do i need to create empty Move ? 
+            if(mandatoryMove(player)) return new Move().type(MoveType.MANDATORY_EXIST);
+        }         
+        
+        // Moving process
+        for (Piece piece : player.pieces) {
+            if(piece.location.equals(current)){
+                piece.location=target; // piece's new location is target
+                try{
+                    board.attachPiece(piece , current); // move: current to center
+                }catch(NoSuchNodeException ex) {
+                    // probably will never get this error. canMove() already check existing of current and target.
+                    LOGGER.fatal("In MOVE " + ex.getMessage());
+                    return new Move().type(MoveType.NONE);
+                }
+            }
+        }
+
+        if(moveType == MoveType.CAPTURE) {
+            /**
+             *  
+             * The code below, finds the owner of captured piece, say it Player opponent.
+             * then removes captured piece in opponents pieces Collection.
+             * 
+             * Do I know nothing about functional programming or the code below is
+             * just normal ? It looks extremely complexity. I need to give a instruction 
+             * of algorithm I used here.
+             * 
+             * 1- Iterate capturedPieces
+             * 2- Find the owner of each captured piece.
+             * 3- If can not find the owner do nothing
+             * 4- If found(always will be), get Piece information from Graph.
+             * 5- Remove the Piece in player p.pieces which p is owner of captured Piece.
+             * 6- invoke breakAttach(capturedLocation) to break connection between the 
+             * Node object and Piece object.
+             */
+            
+            capturedPieces.stream().forEach( (captured)->{
+                players.stream().
+                    filter((opponent) ->opponent.pieces.stream().
+                        filter((piece)->piece.location.equals(captured)).findFirst().isPresent()).
+                        findFirst().ifPresent((opponent)->{
+                            try {
+                                Piece toBeRemovedPiece = board.getAttachedPiece(captured);
+                                board.breakAttach(captured);
+                                opponent.pieces.remove(toBeRemovedPiece);
+                            } catch (NoSuchNodeException e) {
+                                LOGGER.error(e.getMessage());
+                            }
+                        });
+            });
+        }
+
+        return new Move().doer(player.ID).previous(current).current(target).type(moveType);
 	}
 
     /**
      * mandatoryMove method checks existing of mandatory move for @param player.
      * 
      * As RudderGame rule, if player can capture oppenent' piece, the player 'has to'
-     * capture that piece. Of course, if there are several choices, player is free to choose
-     * which Piece will capture. This is mandatory.
+     * capture that piece. Of course, if there are several choices(several capturing moves)
+     * player is free to choose which Piece will capture. This is mandatory.
+     * 
+     * This method follows the algorithm below,
+     * 1- Get every single Pieces of @param player. pieces
+     * 2- Search into pieces's neighbours.
+     * 3- Iterate through neighbours - neighbour
+     * 4- If there is no piece at neighbour in graph then continue
+     * 5- If neighbour is a Piece of @param player then continue(we're looking opponent piece)
+     * 6- If neighbour is a opponent Piece then find the Opponent Piece's neighbours
+     * as opponentPieceNeighbours.
+     * 7- Iterate through opponentPieceNeighbours, if there is at least one location is
+     * available then here we go, we found that mandatory move.
      */
     private boolean mandatoryMove(Player player) {
+        // i tried to use streams in here but lots of code need to write because of
+        // exception handling in lambdas. 
+        try{
+            for (Piece playerPiece : player.pieces) {
+                Set<Location> neighbours = board.getAdjacencies(playerPiece.location);
+                // HIIIIGH level coupling. Messed up here :/
+                for (Location neigbour : neighbours) {
+                    // if there is no Piece at Location neigbour, then this move type is
+                    // MoveType.MOVE which is not mandatory.
+                    if(board.isNodeAvailable(neigbour)) continue;
+                    Piece pieceAtLocationNeighbour = board.getAttachedPiece(neigbour);
+                    // if pieceAtLocationNeighbour is Player's piece, then continue.
+                    if(pieceAtLocationNeighbour.type == player.pieceType) continue;
+                    else { // if pieceAtLocationNeighbour is "opponet's piece" then,
+                        Set<Location> opponentPieceNeighbours = board.getAdjacencies(pieceAtLocationNeighbour.location);
+                        // if there is a empty Location in opponentPieceNeighbours then
+                        // mandatory move is exist!
+                        for (Location locOpponentNeighbour : opponentPieceNeighbours) {
+                            if(canMove(player, playerPiece.location, locOpponentNeighbour) == MoveType.CAPTURE) 
+                                return true;
+                        }
+                    }
+                }
+            }
+        }catch(NoSuchNodeException ex) {
+            LOGGER.error(ex.getMessage());
+        }
+        
         return false;
     }
        

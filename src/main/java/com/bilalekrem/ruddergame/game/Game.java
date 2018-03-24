@@ -67,9 +67,11 @@ public abstract class Game {
     /**
      * @param player makes a move from @param current to @param target.
      * 
-     * @return if opponent's piece removed returns true, otherwise false.
+     * @return Move object that contains information about this move. No matter that
+     * move is valid or not valid. If move is not valid, move.type equals to 
+     * MoveType.NONE. 
      */
-    abstract boolean move(Player player, Location current, Location target);
+    abstract Move move(Player player, Location current, Location target);
 
     /**
      * Move class represents players moves in a game.
@@ -77,12 +79,33 @@ public abstract class Game {
      * @author Bilal Ekrem Harmansa
      */
     public static enum MoveType {
-        MOVE, CAPTURE, NONE
+        MOVE, CAPTURE, NONE, MANDATORY_EXIST
     }
     public class Move {
         int doerID; // the player who does the move
         Location previous; // constructed segment-level
         Location current; // constructed segment-level
+        MoveType type;
+
+        public Move doer(int ID){
+            this.doerID = ID;
+            return this;
+        }
+
+        public Move previous(Location previous){
+            this.previous = previous;
+            return this;
+        }
+
+        public Move current(Location current){
+            this.current = current;
+            return this;
+        }
+
+        public Move type(MoveType type){
+            this.type = type;
+            return this;
+        }
 
         @Override
         public String toString() {

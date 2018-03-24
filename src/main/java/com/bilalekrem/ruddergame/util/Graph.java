@@ -77,7 +77,7 @@ public class Graph {
      * Node and the piece by calling node.piece = piece
      */
     public boolean attachPiece(Piece piece, Location previousLocation) throws NoSuchNodeException {
-        if(piece == null) return false;
+        // if(piece == null) return false; to be clear pie
     
         Node node = getNode(piece.getLocation());
 
@@ -111,6 +111,22 @@ public class Graph {
         if(!node.available()) return node.piece;
         
         return null;
+    }
+
+    /**
+     * breakAttach() find the Node at the Location @param loc
+     * and removes breaks the conection between Node and the Piece.
+     * 
+     * Returns true if removing is successfull, unless its false.
+     */
+    public boolean breakAttach(Location loc) throws NoSuchNodeException{
+        Node node = getNode(loc);
+
+        if(!node.available()) {
+            node.piece = null;
+            return true;
+        }
+        return false;
     }
 
     public boolean isNodeAvailable(Location vertex) throws NoSuchNodeException {
