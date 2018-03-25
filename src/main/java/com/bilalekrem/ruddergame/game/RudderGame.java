@@ -21,6 +21,12 @@ public class RudderGame extends Game{
     private Queue<Location> capturedPieces;
 
     /**
+     * Players who plays the game are in a sequence list, players.
+     * this field, turn, indicates which players' turn is in current time.
+     */
+    protected int turn;
+
+    /**
      * This field can be changed in move. If move(Move) fails and returns false
      * because of existing of mantary move and user is trying to do just a 
      * MoveType.MOVE then this flag sets.
@@ -225,11 +231,10 @@ public class RudderGame extends Game{
 
 	@Override
 	protected MoveType determineMoveType(Move move) {
-        // todo: is player's turn ?
-
         Player player = players.stream().filter((p) -> p.ID ==move.doerID).findFirst().orElse(null);
         if(player == null) return MoveType.NONE; // player not exist.
-
+        else if (player != activePlayer()) return MoveType.NONE; // is player's turn ?
+        
         Location current = move.from; // current location
         Location target = move.to; // target location
 
@@ -253,9 +258,18 @@ public class RudderGame extends Game{
 
                 // Can @param player capture by jumping over opponent pieces ? 
                 Location between = getBetween(current, target);
-                if(between != null && board.getAttachedPiece(between).type != player.pieceType) {
-                    capturedPieces.add(between);
-                    return MoveType.CAPTURE;
+                /**
+                 * Bug fixed, the code was trying to capture a piece that not exist.
+                 * getBetween(..) returns location between current and target. However, I've never checked
+                 * that is there any Piece at locationBetween ? If there is not. There will be no 
+                 * captured pieces. 
+                 */
+                if(between != null) {
+                    Piece pieceBetweenLocation = board.getAttachedPiece(between);
+                    if(pieceBetweenLocation != null && pieceBetweenLocation.type != player.pieceType) {
+                        capturedPieces.add(between);
+                        return MoveType.CAPTURE;
+                    }
                 }
             }
         } catch(NoSuchNodeException ex ) {
@@ -388,6 +402,7 @@ public class RudderGame extends Game{
                 piece.location=target; // piece's new location is target
                 try{
                     board.attachPiece(piece , current); // move: current to center
+                    break;
                 }catch(NoSuchNodeException ex) {
                     // probably will never get this error. canMove() already check existing of current and target.
                     LOGGER.fatal("In MOVE " + ex.getMessage());
@@ -429,54 +444,92 @@ public class RudderGame extends Game{
                             }
                         });
             });
+            // bug fixing, after removing captured piece, be ready capturedPieces to next usage
+            capturedPieces.clear(); 
         }
-        
+
+        // With this move, if one of the opponents piece captured, then player has 
+        if(moveType != MoveType.CAPTURE) turn();
+        else if(moveType == MoveType.CAPTURE && !capturableMoveExist(player, move.to)) {
+            /**
+             * At least one opponent piece is captured by player. We might have a chance to make an
+             * another move when put his piece from currentLocation to target location, if player can 
+             * capture at least one more opponent piece. 
+             * 
+             * moveType == MoveType.CAPTURE && !capturableMoveExist(player, move.to), the condition
+             * tells that after the move, there is no chance to capture another piece then player 
+             * do not have a chance for another move
+             */
+
+             turn();
+        } // else moveType == MoveType.CAPTURE && !capturableMoveExist(player, move.to) gets true,
+            // so player can make another move.
+
         // Just before finishing the method, dont forget the change move type. It's not assigned yet.
         move.type(moveType);
         return true;
 	}
 
     /**
-     * mandatoryMove method checks existing of mandatory move for @param player.
-     * 
      * As RudderGame rule, if player can capture oppenent' piece, the player 'has to'
      * capture that piece. Of course, if there are several choices(several capturing moves)
      * player is free to choose which Piece will capture. This is mandatory.
      * 
-     * This method follows the algorithm below,
-     * 1- Get every single Pieces of @param player. pieces
-     * 2- Search into pieces's neighbours.
-     * 3- Iterate through neighbours - neighbour
-     * 4- If there is no piece at neighbour in graph then continue
-     * 5- If neighbour is a Piece of @param player then continue(we're looking opponent piece)
-     * 6- If neighbour is a opponent Piece then find the Opponent Piece's neighbours
-     * as opponentPieceNeighbours.
-     * 7- Iterate through opponentPieceNeighbours, if there is at least one location is
-     * available then here we go, we found that mandatory move.
+     * mandatoryMove method checks existing of mandatory move for each piece of player.
+     * 
+     * @param player the player who might be forced to make a move that type CAPTURE.
+     * 
+     * @return if there is at least one mandatory move then returns true, otherwise false.
      */
     private boolean mandatoryMove(Player player) {
-        // i tried to use streams in here but lots of code need to write because of
-        // exception handling in lambdas. 
+        for (Piece playerPiece : player.pieces) {
+            boolean exists = capturableMoveExist(player, playerPiece.location);
+            if(exists) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Basicly, this method search for capturable opponent piece. 
+     * @param player the player who will make the move
+     * @param currentLocation one of the currentLocation of player' piece. This is start point
+     * to search for.
+     * 
+     * This method follows the algorithm below,
+     * 1- Search into pieces's neighbours.
+     * 2- Iterate through neighbours - neighbour
+     * 3- If there is no piece at neighbour in graph then continue
+     * 4- If neighbour is a Piece of @param player then continue(we're looking opponent piece)
+     * 5- If neighbour is a opponent Piece then find the Opponent Piece's neighbours
+     * as opponentPieceNeighbours.
+     * 6- Iterate through opponentPieceNeighbours, if there is at least one location is
+     * available then here we go, we found our move.
+     * 
+     * @return returns where do player makes a move from currentLocation to. 
+     */
+    private boolean capturableMoveExist(Player player, Location currentLocation) {
         try{
-            for (Piece playerPiece : player.pieces) {
-                Set<Location> neighbours = board.getAdjacencies(playerPiece.location);
-                // HIIIIGH level coupling. Messed up here :/
-                for (Location neigbour : neighbours) {
-                    // if there is no Piece at Location neigbour, then this move type is
-                    // MoveType.MOVE which is not mandatory.
-                    if(board.isNodeAvailable(neigbour)) continue;
-                    Piece pieceAtLocationNeighbour = board.getAttachedPiece(neigbour);
-                    // if pieceAtLocationNeighbour is Player's piece, then continue.
-                    if(pieceAtLocationNeighbour.type == player.pieceType) continue;
-                    else { // if pieceAtLocationNeighbour is "opponet's piece" then,
-                        Set<Location> opponentPieceNeighbours = board.getAdjacencies(pieceAtLocationNeighbour.location);
-                        // if there is a empty Location in opponentPieceNeighbours then
-                        // mandatory move is exist!
-                        for (Location locOpponentNeighbour : opponentPieceNeighbours) {
-                            Move move = new Move().doer(player.ID).from(playerPiece.location).to(locOpponentNeighbour);
-                            if(determineMoveType(move) == MoveType.CAPTURE) 
-                                return true;
+            Set<Location> neighbours = board.getAdjacencies(currentLocation);
+            // HIIIIGH level coupling. Messed up here :/
+            for (Location neigbour : neighbours) {
+                // if there is no Piece at Location neigbour, then this move type is
+                // MoveType.MOVE which is not what we look it for.
+                if(board.isNodeAvailable(neigbour)) continue;
+                Piece pieceAtLocationNeighbour = board.getAttachedPiece(neigbour);
+                // if pieceAtLocationNeighbour is Player's piece, then continue.
+                if(pieceAtLocationNeighbour.type == player.pieceType) continue;
+                else { // if pieceAtLocationNeighbour is "opponet's piece"(that what we look for) then,
+                    Set<Location> opponentPieceNeighbours = board.getAdjacencies(pieceAtLocationNeighbour.location);
+                    // if there is a empty Location in opponentPieceNeighbours then
+                    // our move can be exist!
+                    for (Location locOpponentNeighbour : opponentPieceNeighbours) {
+                        Move move = new Move().doer(player.ID).from(currentLocation).to(locOpponentNeighbour);
+                        if(determineMoveType(move) == MoveType.CAPTURE) {
+                            LOGGER.debug("Mandatory move -" + currentLocation + "-" + locOpponentNeighbour);
+                            return true;
                         }
+                            
                     }
                 }
             }
@@ -484,9 +537,18 @@ public class RudderGame extends Game{
             LOGGER.error(ex.getMessage());
         }
         
+
         return false;
     }
-       
+
+    @Override
+    protected Player activePlayer() {
+        return players.get(turn);
+    }
+
+    private void turn() {
+        turn = (++turn) % 2; //2 means players.size(). RudderGame always plays with 2 players.
+    }
     public boolean checkMandatoryFlag() {
         return MANDATORY_MOVE_EXIST;
     }

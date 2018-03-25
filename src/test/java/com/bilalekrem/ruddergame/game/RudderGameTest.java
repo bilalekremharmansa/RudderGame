@@ -22,7 +22,8 @@ public class RudderGameTest {
         locc1, locc2, locc3, locc4,
         locd1, 
         loce1, 
-        locf1;
+        locf1,
+        locg1;
 
     @Before
     public void setup() {
@@ -49,6 +50,7 @@ public class RudderGameTest {
         locd1 = new RudderGameLocation(Segment.D, 1);
         loce1 = new RudderGameLocation(Segment.E, 1);
         locf1 = new RudderGameLocation(Segment.F, 1);
+        locg1 = new RudderGameLocation(Segment.G, 1);
     }
 
     @Test
@@ -85,39 +87,34 @@ public class RudderGameTest {
     }
 
     @Test
-    public void testCanMove() throws NoSuchNodeException{
+    public void testDetermineMoveType() throws NoSuchNodeException{
         game.initiliazeBoard();
         game.initiliazeGame(p1, p2);
 
-        // level 1 to center
+        // level 1 to center, now, p2's turn
         Move move1 = game.new Move().doer(p1.ID).from(loca1).to(loccenter); 
         assertEquals(MoveType.MOVE, game.determineMoveType(move1));
 
-        // todo: move method is not implemented yet. Change with move when is ready.
-        // level 1 to center is not acceptable.
+        // level 1 to center is not acceptable
         game.move(move1);
         assertEquals(MoveType.NONE, game.determineMoveType(move1));
 
-        // same level different segment
-        Move move2 = game.new Move().doer(p1.ID).from(locb1).to(loca1); 
-        assertEquals(MoveType.MOVE, game.determineMoveType(move2));
+        // player 2 make a move e1 to a1, p1's piece is captured. 
+        Move move2 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        assertEquals(MoveType.CAPTURE, game.determineMoveType(move2));
         game.move(move2);
         assertEquals(MoveType.NONE, game.determineMoveType(move2));
+        assertEquals(true, game.board.isNodeAvailable(loccenter));
         
-        // b1 is free for now, canMove b2 to b1 ?
-        Move move3 = game.new Move().doer(p1.ID).from(locb2).to(locb1); 
+        // p1's turn, there is a mandatory move, it must be a2 to center
+        // but we first try b1 to center. However we will not be able to move
+        // as you know we test determineMoveType method so we dont care
+        Move move3 = game.new Move().doer(p1.ID).from(locb1).to(loccenter); 
         assertEquals(MoveType.MOVE, game.determineMoveType(move3));
 
-        //Can we move opponents piece ? f1 to b1
-        Move move4 = game.new Move().doer(p1.ID).from(locf1).to(locb1); 
-        assertEquals(MoveType.NONE, game.determineMoveType(move4));
-
-        // Let's move a1 to b1. Now, can move e1 to b1 with player 2
-        // Do not forget, we putted a p1's piece to center, it still there.
-        Move move6 = game.new Move().doer(p1.ID).from(loca1).to(locb1); 
-        game.move(move6);
-        Move move5 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
-        assertEquals(MoveType.CAPTURE, game.determineMoveType(move5));
+        // still p1's turn
+        Move move4 = game.new Move().doer(p1.ID).from(loca2).to(loccenter); 
+        assertEquals(MoveType.MOVE, game.determineMoveType(move3));
     }
 
     @Test
@@ -136,7 +133,8 @@ public class RudderGameTest {
         boolean result2 = game.move(move2);
         assertEquals(false, result2);
 
-        // move e1 to a1 by p1, p1 is not owner of e1
+        // move e1 to a1 by p1, p1 is not owner of e1 and p2's turn now.
+        // p1 can not make a move.
         Move move3 = game.new Move().doer(p1.ID).from(loce1).to(loca1); 
         boolean result3 = game.move(move3);
         assertEquals(false, result3);
@@ -149,10 +147,7 @@ public class RudderGameTest {
         // only assings if result is true
         assertEquals(MoveType.CAPTURE, move4.type); 
         assertEquals(false, game.checkMandatoryFlag());
-
-        // check that p2 captured a piece from p1 which that piece
-        // was at center.
-        assertEquals(true, game.board.isNodeAvailable(loccenter));
+        Piece p = game.board.getAttachedPiece(loca1);
 
         // try to move b2 to center(Type.MOVE), but there is mandatory
         // a2 to center
@@ -161,6 +156,28 @@ public class RudderGameTest {
         assertEquals(false, result5);
         assertEquals(null, move5.type);
         assertEquals(true, game.checkMandatoryFlag());
+
+        // if p1 move a2 to center(this is mandatory move), then
+        // p2 move f1 to e1, then
+        // p1 move a3 to a2
+        // now p2's turn. p2 move e1 to a1(captured center), and p2 STILL
+        // can make a move. Because p2 can capture one more piece by moving
+        // a1 to a3. Lets see.
+        Move move6 = game.new Move().doer(p1.ID).from(loca2).to(loccenter); 
+        boolean result6 = game.move(move6);
+        Move move7 = game.new Move().doer(p2.ID).from(locf1).to(loce1); 
+        boolean result7 = game.move(move7);
+        Move move8 = game.new Move().doer(p1.ID).from(locd1).to(locf1); 
+        boolean result8 = game.move(move8);
+        Move move9 = game.new Move().doer(p2.ID).from(locg1).to(loce1); 
+        boolean result9 = game.move(move9);
+        Move move10 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        boolean result10 = game.move(move10);
+        assertEquals(true, result6);
+        assertEquals(true, result7);
+        assertEquals(true, result8);
+        assertEquals(true, result9);
+        assertEquals(true, result10);
     }
         
 

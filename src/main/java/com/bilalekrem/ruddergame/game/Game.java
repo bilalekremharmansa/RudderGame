@@ -19,7 +19,7 @@ public abstract class Game {
     public static final int LEVEL = 4;
 
     int ID;
-    Set<Player> players; // playerId -> Player
+    List<Player> players; // playerId -> Player
     Graph board;
     List<Move> moves;
 
@@ -29,7 +29,7 @@ public abstract class Game {
      * Default constructor, constructs collections
      */
     protected Game() {
-        players = new HashSet<>();
+        players = new ArrayList<>();
         moves = new ArrayList<>();
         locations = new HashSet<>();
     }
@@ -78,6 +78,14 @@ public abstract class Game {
      * returns true, otherwise returns false. 
      */
     abstract protected boolean move(Move move);
+
+    /**
+     * After a player makes a move, if he does not capture opponents one of the piece
+     * the turn goes to next player. 
+     * We expected from this method that 
+     * @return which player's turn to make a move ?
+     */
+    abstract protected Player activePlayer();
 
     /**
      * Move class represents players moves in a game 'from' one place 'to' another.
