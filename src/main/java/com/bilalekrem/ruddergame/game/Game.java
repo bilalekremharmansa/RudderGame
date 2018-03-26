@@ -2,12 +2,11 @@ package com.bilalekrem.ruddergame.game;
 
 import com.bilalekrem.ruddergame.util.Graph;
 import com.bilalekrem.ruddergame.util.Location;
-import com.bilalekrem.ruddergame.util.Graph.NoSuchNodeException;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 
 /**
  * Game class represent a game. It defined as abstract so 
@@ -16,14 +15,12 @@ import java.util.HashSet;
  * @author Bilal Ekrem Harmansa
  */
 public abstract class Game {
-    public static final int LEVEL = 4;
-
     int ID;
     List<Player> players; // playerId -> Player
     Graph board;
     List<Move> moves;
 
-    protected Set<Location> locations;
+    protected Map<Location, Piece> locations;
 
     /**
      * Default constructor, constructs collections
@@ -31,7 +28,7 @@ public abstract class Game {
     protected Game() {
         players = new ArrayList<>();
         moves = new ArrayList<>();
-        locations = new HashSet<>();
+        locations = new HashMap<>();
     }
 
     /** 
@@ -48,6 +45,7 @@ public abstract class Game {
      */
     abstract protected void initiliazeGame(Player... players);
 
+  
     /**
      * Each game can be different ends. As Rudder Game rule 
      * if a player has just 3 pieces, the player is defeated.
@@ -96,10 +94,11 @@ public abstract class Game {
         MOVE, CAPTURE, NONE
     }
     public class Move {
-        int doerID; // the player who does the move
-        Location from; // constructed segment-level
-        Location to; // constructed segment-level
-        MoveType type;
+        public int doerID; // the player who does the move
+        public Location from; // constructed segment-level
+        public Location to; // constructed segment-level
+        public Location captured; // captured opponents piece location
+        public MoveType type;
 
         public Move doer(int ID){
             this.doerID = ID;
@@ -113,6 +112,11 @@ public abstract class Game {
 
         public Move to(Location to){
             this.to = to;
+            return this;
+        }
+
+        public Move captured(Location captured){
+            this.captured = captured;
             return this;
         }
 
@@ -167,14 +171,15 @@ public abstract class Game {
          * @param location the location to set
          */
         public void setLocation(Location location) {
-            try {
-                Location previousLocation = this.location;
-                this.location = location;
-                board.attachPiece(this, previousLocation);
-            } catch(NoSuchNodeException ex) {
+            Location previousLocation = this.location;
+            if(previousLocation != null) locations.put(previousLocation, null);
+            this.location = location;
+            locations.put(location, this);
+        }
 
-            }
-            
+        @Override
+        public String toString(){
+            return type.name() + " piece at " + location.toString();
         }
     }
 

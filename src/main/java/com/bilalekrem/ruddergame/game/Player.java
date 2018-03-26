@@ -10,10 +10,23 @@ import java.util.ArrayList;
  */
 public class Player {
     // player ids will be used to distinguish Player in Game class. 
-    int ID; 
-    String name; // players name
-    Game.PieceType pieceType; //  what is the color(type) of Player ?
-    List<Game.Piece> pieces; // Each players pieces holds in here.
+    public int ID; 
+    public String name; // players name
+    public Game.PieceType pieceType; //  what is the color(type) of Player ?
+    public List<Game.Piece> pieces; // Each players pieces holds in here.
+
+    public Player(int ID, String username) {
+        this.ID = ID;
+        this.name = username;
+    }
+
+    public void setPieceType(Game.PieceType type) {
+        this.pieceType = type;
+    }
+
+    public void addPiece(Game.Piece piece) {
+        this.pieces.add(piece);
+    }
 
     /**
      * if user plays two games in a row. 

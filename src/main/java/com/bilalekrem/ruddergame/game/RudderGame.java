@@ -11,13 +11,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Queue;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.LinkedList;
 
 public class RudderGame extends Game{
 
     private static final Logger LOGGER = LogManager.getLogger(RudderGame.class);
 
+    public static final int LEVEL = 4;
     private Queue<Location> capturedPieces;
 
     /**
@@ -38,7 +38,7 @@ public class RudderGame extends Game{
     }
     
 	@Override
-	protected Graph initiliazeBoard() {
+	public Graph initiliazeBoard() {
         board = new Graph();
         
         /** either, i dont like to write lines below. */
@@ -95,7 +95,6 @@ public class RudderGame extends Game{
         for (Location[] locs : locations) {
             for (Location loc : locs) {
                 board.addVertex(loc);
-                this.locations.add(loc);
             }
         }
         
@@ -165,7 +164,7 @@ public class RudderGame extends Game{
     }
     
     @Override
-	protected void initiliazeGame(Player... players) {
+	public void initiliazeGame(Player... players) {
         // using hashCode as game id
         this.ID = hashCode();
 
@@ -195,12 +194,9 @@ public class RudderGame extends Game{
                 Location location = new RudderGameLocation(segments[index], j);
                 Piece piece = new Piece(location, playerOne.pieceType);
     
-                try {
-                    board.attachPiece(piece, null); // first call, no prev location
-                    playerOne.pieces.add(piece);
-                } catch (NoSuchNodeException ex) {
-                    LOGGER.error("Could not find vertex v {}", location);
-                }
+                locations.put(location, piece); // first call, no prev location
+                playerOne.pieces.add(piece);
+
             }
             index++;
         }
@@ -213,24 +209,20 @@ public class RudderGame extends Game{
                 Location location = new RudderGameLocation(segments[index], j);
                 Piece piece = new Piece(location, playerTwo.pieceType);
     
-                try {
-                    board.attachPiece(piece, null);
-                    playerTwo.pieces.add(piece);
-                } catch (NoSuchNodeException ex) {
-                    LOGGER.error("There is no vertex as {}", location);
-                }
+                locations.put(location, piece); // first call, no prev location
+                playerTwo.pieces.add(piece);            
             }
             index++;
         }
     }
 
 	@Override
-	protected boolean isDefeated(Player player) {
+	public boolean isDefeated(Player player) {
 		return player.pieces.size()<=3;
 	}
 
 	@Override
-	protected MoveType determineMoveType(Move move) {
+	public MoveType determineMoveType(Move move) {
         Player player = players.stream().filter((p) -> p.ID ==move.doerID).findFirst().orElse(null);
         if(player == null) return MoveType.NONE; // player not exist.
         else if (player != activePlayer()) return MoveType.NONE; // is player's turn ?
@@ -247,7 +239,7 @@ public class RudderGame extends Game{
 
         try {
             // Check is target empty or available to move ?
-            boolean isNodeAvailable = board.isNodeAvailable(target);
+            boolean isNodeAvailable = locations.get(target) == null ? true : false;
 
             if(isNodeAvailable) {
                 // If target node and current node are neighbour.
@@ -265,7 +257,7 @@ public class RudderGame extends Game{
                  * captured pieces. 
                  */
                 if(between != null) {
-                    Piece pieceBetweenLocation = board.getAttachedPiece(between);
+                    Piece pieceBetweenLocation = locations.get(between);
                     if(pieceBetweenLocation != null && pieceBetweenLocation.type != player.pieceType) {
                         capturedPieces.add(between);
                         return MoveType.CAPTURE;
@@ -370,7 +362,7 @@ public class RudderGame extends Game{
      * is doing that something lower priority. This methods sets MANDATORY_MOVE_EXIST flag sets.
      */
 	@Override
-	protected boolean move(Move move) {
+	public boolean move(Move move) {
         MoveType moveType = determineMoveType(move);
 
         Player player = players.stream().filter((p) -> p.ID ==move.doerID).findFirst().orElse(null);
@@ -399,15 +391,7 @@ public class RudderGame extends Game{
         // Moving process
         for (Piece piece : player.pieces) {
             if(piece.location.equals(current)){
-                piece.location=target; // piece's new location is target
-                try{
-                    board.attachPiece(piece , current); // move: current to center
-                    break;
-                }catch(NoSuchNodeException ex) {
-                    // probably will never get this error. canMove() already check existing of current and target.
-                    LOGGER.fatal("In MOVE " + ex.getMessage());
-                    return false;
-                }
+                piece.setLocation(target);; // piece's new location is target
             }
         }
 
@@ -434,14 +418,14 @@ public class RudderGame extends Game{
                 players.stream().
                     filter((opponent) ->opponent.pieces.stream().
                         filter((piece)->piece.location.equals(captured)).findFirst().isPresent()).
-                        findFirst().ifPresent((opponent)->{
-                            try {
-                                Piece toBeRemovedPiece = board.getAttachedPiece(captured);
-                                board.breakAttach(captured);
-                                opponent.pieces.remove(toBeRemovedPiece);
-                            } catch (NoSuchNodeException e) {
-                                LOGGER.error(e.getMessage());
-                            }
+                        findFirst().ifPresent((opponent)-> {
+                            Piece toBeRemovedPiece = locations.get(captured);
+                            locations.put(captured, null); 
+                            opponent.pieces.remove(toBeRemovedPiece);
+                            
+                            // If captured a piece, we had to be able to locate the piece
+                            // which is captured.
+                            move.captured = captured;
                         });
             });
             // bug fixing, after removing captured piece, be ready capturedPieces to next usage
@@ -467,6 +451,7 @@ public class RudderGame extends Game{
 
         // Just before finishing the method, dont forget the change move type. It's not assigned yet.
         move.type(moveType);
+        moves.add(move);
         return true;
 	}
 
@@ -512,11 +497,11 @@ public class RudderGame extends Game{
         try{
             Set<Location> neighbours = board.getAdjacencies(currentLocation);
             // HIIIIGH level coupling. Messed up here :/
-            for (Location neigbour : neighbours) {
+            for (Location neighbour : neighbours) {
                 // if there is no Piece at Location neigbour, then this move type is
                 // MoveType.MOVE which is not what we look it for.
-                if(board.isNodeAvailable(neigbour)) continue;
-                Piece pieceAtLocationNeighbour = board.getAttachedPiece(neigbour);
+                Piece pieceAtLocationNeighbour = locations.get(neighbour);
+                if(pieceAtLocationNeighbour == null) continue;
                 // if pieceAtLocationNeighbour is Player's piece, then continue.
                 if(pieceAtLocationNeighbour.type == player.pieceType) continue;
                 else { // if pieceAtLocationNeighbour is "opponet's piece"(that what we look for) then,
@@ -542,7 +527,7 @@ public class RudderGame extends Game{
     }
 
     @Override
-    protected Player activePlayer() {
+    public Player activePlayer() {
         return players.get(turn);
     }
 

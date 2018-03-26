@@ -3,13 +3,10 @@ package com.bilalekrem.ruddergame.game;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
 
 import com.bilalekrem.ruddergame.game.Game.*;
 import com.bilalekrem.ruddergame.util.*;
 import com.bilalekrem.ruddergame.util.Graph.NoSuchNodeException;
-
-import java.util.*;
 
 public class RudderGameTest {
 
@@ -29,13 +26,9 @@ public class RudderGameTest {
     public void setup() {
         game = new RudderGame();
 
-        p1 = new Player();
-        p1.ID=1;
-        p1.name="Foo";
+        p1 = new Player(1, "Foo");
         
-        p2 = new Player();
-        p2.ID=2;
-        p2.name="Bar";
+        p2 = new Player(2, "Bar");
 
         loccenter = new RudderGameLocation(Segment.CENTER, 1);
         loca1 = new RudderGameLocation(Segment.A, 1);
@@ -79,11 +72,13 @@ public class RudderGameTest {
         game.initiliazeBoard();
                 
         // be aware, created a RudderGameLocation instance not a Location.
-        assertEquals(true, game.board.isNodeAvailable(loca1));
+        boolean available1 = game.locations.get(loca1) == null ? true : false;
+        assertEquals(true, available1);
 
         game.initiliazeGame(p1, p2);
 
-        assertEquals(false, game.board.isNodeAvailable(loca1));
+        boolean available2 = game.locations.get(loca1) == null ? true : false;
+        assertEquals(false, available2);
     }
 
     @Test
@@ -104,7 +99,8 @@ public class RudderGameTest {
         assertEquals(MoveType.CAPTURE, game.determineMoveType(move2));
         game.move(move2);
         assertEquals(MoveType.NONE, game.determineMoveType(move2));
-        assertEquals(true, game.board.isNodeAvailable(loccenter));
+        boolean available2 = game.locations.get(loccenter) == null ? true : false;
+        assertEquals(true, available2);
         
         // p1's turn, there is a mandatory move, it must be a2 to center
         // but we first try b1 to center. However we will not be able to move
@@ -112,9 +108,6 @@ public class RudderGameTest {
         Move move3 = game.new Move().doer(p1.ID).from(locb1).to(loccenter); 
         assertEquals(MoveType.MOVE, game.determineMoveType(move3));
 
-        // still p1's turn
-        Move move4 = game.new Move().doer(p1.ID).from(loca2).to(loccenter); 
-        assertEquals(MoveType.MOVE, game.determineMoveType(move3));
     }
 
     @Test
@@ -147,7 +140,6 @@ public class RudderGameTest {
         // only assings if result is true
         assertEquals(MoveType.CAPTURE, move4.type); 
         assertEquals(false, game.checkMandatoryFlag());
-        Piece p = game.board.getAttachedPiece(loca1);
 
         // try to move b2 to center(Type.MOVE), but there is mandatory
         // a2 to center

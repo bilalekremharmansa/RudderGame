@@ -1,7 +1,5 @@
 package com.bilalekrem.ruddergame.util;
 
-import com.bilalekrem.ruddergame.game.Game.Piece;
-
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
@@ -9,10 +7,6 @@ import java.util.Objects;
 import java.util.HashMap;
 import java.util.Collections;
 import java.util.stream.Collectors;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 
 /**
  * The implementation of this class is inspired of,
@@ -26,8 +20,6 @@ import org.apache.logging.log4j.Logger;
  * @author Bilal Ekrem Harmansa
  */
 public class Graph {
-
-    private static final Logger LOGGER = LogManager.getLogger(Graph.class);
 
     protected Set<Edge> edges;
     protected Map<Location, Node> vertices;
@@ -63,74 +55,6 @@ public class Graph {
         
         adjacenciesFrom.add(to);
         adjacenciesTo.add(from);
-    }
-
-    /**
-     * This method attach Piece's to graph Node's. Each node constructed with a Location.
-     * Only thing that Piece know is location, Piece' do not have an access to Node. This method
-     * is a way of connecting them together. 
-     * 
-     * @param previousLocation previous location of Piece. If a Piece connected a Node before this call,
-     * breaks the old connection between the Node and the Type
-     * 
-     * @param piece is needed to get the location of new Piece. When new location of found in a Node. Connects the
-     * Node and the piece by calling node.piece = piece
-     */
-    public boolean attachPiece(Piece piece, Location previousLocation) throws NoSuchNodeException {
-        // if(piece == null) return false; to be clear pie
-    
-        Node node = getNode(piece.getLocation());
-
-        if(node.available()) {
-            /** if previous location exists */
-            if(previousLocation != null) {
-                // I've learned how not map works :)
-                vertices.values().stream().filter( (n) -> n.location.equals(previousLocation) ).
-                    findAny().ifPresent( (n) -> n.piece = null);
-            } 
-
-            // attach the piece with the node that piece located.
-            node.piece = piece;
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * This methods can be used after attach a Piece to Node. Basicly, returns attached Piece 
-     * in @param location. 
-     * 
-     * If there is no Piece that attached. Just return nulls.
-     * 
-     * If given location is not exist or could not found throws NoSuchNodeException
-     */
-    public Piece getAttachedPiece(Location location) throws NoSuchNodeException {
-        Node node = getNode(location);
-        
-        if(!node.available()) return node.piece;
-        
-        return null;
-    }
-
-    /**
-     * breakAttach() find the Node at the Location @param loc
-     * and removes breaks the conection between Node and the Piece.
-     * 
-     * Returns true if removing is successfull, unless its false.
-     */
-    public boolean breakAttach(Location loc) throws NoSuchNodeException{
-        Node node = getNode(loc);
-
-        if(!node.available()) {
-            node.piece = null;
-            return true;
-        }
-        return false;
-    }
-
-    public boolean isNodeAvailable(Location vertex) throws NoSuchNodeException {
-        return getNode(vertex).available();
     }
 
     /**
@@ -184,7 +108,6 @@ public class Graph {
      */
     public static class Node {
         private final Location location;
-        private Piece piece;
 
         private Node(Segment segment, int level) {
             this(new Location(segment, level));        
@@ -192,10 +115,6 @@ public class Graph {
 
         private Node(Location location) {
             this.location = location;
-        }
-
-        private boolean available() {
-            return piece == null;
         }
     
         @Override

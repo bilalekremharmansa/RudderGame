@@ -1,7 +1,5 @@
 package com.bilalekrem.ruddergame.util;
 
-import com.bilalekrem.ruddergame.game.*;
-
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -73,19 +71,5 @@ public class GraphTest {
 
         assertEquals(adj, adjacencies);
     }
-    
-    @Test
-    public void testAvailableNode() throws NoSuchNodeException {
-        graph.addVertex(loc2);
-        boolean isAvailable = graph.isNodeAvailable(loc2);
 
-        assertEquals(true, isAvailable);
-
-        // to make a piece we need a Game
-        Game game = new RudderGame();
-        Game.Piece piece = game.new Piece(loc2, Game.PieceType.DARK); 
-        graph.attachPiece(piece, null);
-        isAvailable = graph.isNodeAvailable(loc2);
-        assertEquals(false, isAvailable);
-    }
 }
