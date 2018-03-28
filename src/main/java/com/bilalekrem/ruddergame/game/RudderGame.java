@@ -231,6 +231,8 @@ public class RudderGame extends Game{
                  */
                 if(between != null) {
                     Piece pieceBetweenLocation = locations.get(between);
+                    // bug fixing, before adding a captured piece, clear data from previous usage.
+                    capturedPieces.clear(); 
                     if(pieceBetweenLocation != null && pieceBetweenLocation.type != player.pieceType) {
                         capturedPieces.add(between);
                         return MoveType.CAPTURE;
@@ -405,8 +407,6 @@ public class RudderGame extends Game{
                             move.captured = captured;
                         });
             });
-            // bug fixing, after removing captured piece, be ready capturedPieces to next usage
-            capturedPieces.clear(); 
         }
 
         // With this move, if one of the opponents piece captured, then player has 
