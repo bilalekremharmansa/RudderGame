@@ -17,7 +17,7 @@ public class RudderGameTest {
     Location loccenter, loca1, loca2, loca3, 
         locb1, locb2, locb3, locb4,
         locc1, locc2, locc3, locc4,
-        locd1, 
+        locd1, locd2, 
         loce1, 
         locf1,
         locg1;
@@ -41,6 +41,7 @@ public class RudderGameTest {
         locc2 = new RudderGameLocation(Segment.C, 2);
         locc3 = new RudderGameLocation(Segment.C, 3);
         locd1 = new RudderGameLocation(Segment.D, 1);
+        locd2 = new RudderGameLocation(Segment.D, 2);
         loce1 = new RudderGameLocation(Segment.E, 1);
         locf1 = new RudderGameLocation(Segment.F, 1);
         locg1 = new RudderGameLocation(Segment.G, 1);
@@ -172,6 +173,38 @@ public class RudderGameTest {
         assertEquals(true, result10);
     }
         
+    @Test
+    public void testGame() {
+        game.initiliazeBoard();
+        game.initiliazeGame(p1, p2);
+        
+        Move move1 = game.new Move().doer(p1.ID).from(loca1).to(loccenter); 
+        boolean result1 = game.move(move1);
+        assertEquals(true, result1);
+        
+        move1 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        result1 = game.move(move1);
+        
+        move1 = game.new Move().doer(p1.ID).from(loca2).to(loccenter); 
+        result1 = game.move(move1);
+        
+        move1 = game.new Move().doer(p2.ID).from(locf1).to(loce1); 
+        result1 = game.move(move1);
+        
+        move1 = game.new Move().doer(p1.ID).from(locd1).to(locf1); 
+        result1 = game.move(move1);
+        
+        move1 = game.new Move().doer(p2.ID).from(locg1).to(loce1); 
+        result1 = game.move(move1);
+        
+        move1 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        result1 = game.move(move1);
+        
+        move1 = game.new Move().doer(p1.ID).from(locc1).to(locd1); 
+        result1 = game.move(move1);
+        assertEquals(true, result1);
+
+    }
 
     
 }

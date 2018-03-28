@@ -153,7 +153,7 @@ public abstract class Game {
     public class Piece {
         
         protected Location location; // piece' location on the graph as pair of segment-level
-        PieceType type;
+        protected PieceType type;
         
         public Piece(Location location, PieceType type) {
             this.location = location;
@@ -175,6 +175,13 @@ public abstract class Game {
             if(previousLocation != null) locations.put(previousLocation, null);
             this.location = location;
             locations.put(location, this);
+        }
+
+        /**
+         * @return the type of Piece
+         */
+        public PieceType getType() {
+            return this.type;
         }
 
         @Override

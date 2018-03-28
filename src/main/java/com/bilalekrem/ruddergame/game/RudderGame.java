@@ -41,51 +41,24 @@ public class RudderGame extends Game{
 	public Graph initiliazeBoard() {
         board = new Graph();
         
+        Segment[] segments = Segment.values();
+        /** segments.length minus 1 not including CENTER */
+        Location[][] locations = new Location[segments.length-1][];
+
         /** either, i dont like to write lines below. */
         Location center = new RudderGameLocation(Segment.CENTER, 0);
 
-        Location[] as = new Location[]{
-            new RudderGameLocation(Segment.A, 1),
-            new RudderGameLocation(Segment.A, 2),
-            new RudderGameLocation(Segment.A, 3),
-            new RudderGameLocation(Segment.A, 4)};
-        Location[] bs = new Location[]{
-            new RudderGameLocation(Segment.B, 1),
-            new RudderGameLocation(Segment.B, 2),
-            new RudderGameLocation(Segment.B, 3),
-            new RudderGameLocation(Segment.B, 4)};
-        Location[] cs = new Location[]{
-            new RudderGameLocation(Segment.C, 1),
-            new RudderGameLocation(Segment.C, 2),
-            new RudderGameLocation(Segment.C, 3),
-            new RudderGameLocation(Segment.C, 4)};
-        Location[] ds = new Location[]{
-            new RudderGameLocation(Segment.D, 1),
-            new RudderGameLocation(Segment.D, 2),
-            new RudderGameLocation(Segment.D, 3),
-            new RudderGameLocation(Segment.D, 4)};
-        Location[] es = new Location[]{
-            new RudderGameLocation(Segment.E, 1),
-            new RudderGameLocation(Segment.E, 2),
-            new RudderGameLocation(Segment.E, 3),
-            new RudderGameLocation(Segment.E, 4)};
-        Location[] fs = new Location[]{
-            new RudderGameLocation(Segment.F, 1),
-            new RudderGameLocation(Segment.F, 2),
-            new RudderGameLocation(Segment.F, 3),
-            new RudderGameLocation(Segment.F, 4)};
-        Location[] gs = new Location[]{
-            new RudderGameLocation(Segment.G, 1),
-            new RudderGameLocation(Segment.G, 2),
-            new RudderGameLocation(Segment.G, 3),
-            new RudderGameLocation(Segment.G, 4)};
-        Location[] hs = new Location[]{
-            new RudderGameLocation(Segment.H, 1),
-            new RudderGameLocation(Segment.H, 2),
-            new RudderGameLocation(Segment.H, 3),
-            new RudderGameLocation(Segment.H, 4)};
+        int index = 0;
+        for (Segment segment: segments) {
+            if(segment == Segment.CENTER) continue;
 
-        Location[][] locations = new Location[][]{as,bs,cs,ds,es,fs,gs,hs};
+            Location[] locs = new Location[RudderGame.LEVEL];
+            for (int j = 0; j < RudderGame.LEVEL; j++) {
+                Location loc = new RudderGameLocation(segment, j+1);
+                locs[j] = loc;
+            }
+            locations[index++] = locs;
+        }
 
         /**
          * center is special case that is called just once.
@@ -126,7 +99,6 @@ public class RudderGame extends Game{
             }
         }
 
-        
         /**
          * The loop below builds link Locations on same 'level'
          * When loop ended, there will be a connection like,
@@ -135,7 +107,6 @@ public class RudderGame extends Game{
          * not like this. h1 should've connected to a1. For this
          * purpose we connects them by manually(not in the loop).
          */
-
         for (int i = 0; i < locations.length - 1; i++) {
 
             Location[] firstLocs = locations[i];
@@ -151,10 +122,14 @@ public class RudderGame extends Game{
             }
         }
         try {
-            board.addEdge(as[0], hs[0]);
-            board.addEdge(as[1], hs[1]);
-            board.addEdge(as[2], hs[2]);
-            board.addEdge(as[3], hs[3]);
+            /** I know that Segments.values() are in order alphabeticly. 
+             *  locations[0] contains Segment A
+             *  locations[7] contains Segment H
+             */
+            board.addEdge(locations[0][0], locations[7][0]);
+            board.addEdge(locations[0][1], locations[7][1]);
+            board.addEdge(locations[0][2], locations[7][2]);
+            board.addEdge(locations[0][3], locations[7][3]);
         }catch(NoSuchNodeException ex){
             LOGGER.error(ex.getMessage());
         }   
@@ -201,8 +176,6 @@ public class RudderGame extends Game{
             index++;
         }
 
-        
-        
         // playerTwo pieces're placed on Segments E,F,G,H
         for (int i = 0; i < segments.length / 2; i++) {
             for (int j = 1; j <= LEVEL; j++) {
@@ -316,34 +289,38 @@ public class RudderGame extends Game{
                         loc.level == ((firstLocation.level + secondLocation.level) / 2)) {
                     return loc;
                 }
+                RudderGameLocation _firstLocation = (RudderGameLocation) firstLocation;
+                RudderGameLocation _secondLocation = (RudderGameLocation) secondLocation;
+                RudderGameLocation _loc = (RudderGameLocation) loc;
                 if (firstLocation.level == secondLocation.level) {
                     /**
                      * If they are on same level.
                      * String comparison to determine that if firstLocation and secondLocation 
-                     * make a straight line ? If comparing result is 1 or -1 
+                     * make a straight line ? If distance is 1 
                      * i.e. A-B, B-C,....,H-A
                      */
-                    if ( Math.abs(firstLocation.segment.compareTo(secondLocation.segment)) == 1) {
-                        return loc;
-                    }else if ( (firstLocation.segment == Segment.H && secondLocation.segment == Segment.A) ||
-                        firstLocation.segment == Segment.A && secondLocation.segment == Segment.H  ) {
+                    if (_firstLocation.segmentDistance(_loc) == 1 && _loc.segmentDistance(_secondLocation) == 1) {
                         return loc;
                     }
                 }
-                if(loc.segment == Segment.CENTER && 
-                    Math.abs(firstLocation.segment.compareTo(secondLocation.segment)) == 4 ) {
+                if(loc.segment == Segment.CENTER && _firstLocation.segmentDistance(_secondLocation) == 4) {
                      /**
                      * As we know a Segment can be A,B,C D,E,F,G,H and we know that there is a 
                      * straight line from A to E, B to F, D to H and etc. We can use String comparison to
                      * determine that if firstLocation and secondLocation make a straight
-                     * line ? If comparing results as 4 or -4 that means they are neighbour. 
+                     * line ? If segmentDistance is 4 that menas they are neighbour.
                      * 
                      * Otherwise, loc == Segment.CENTER is not acceptable.
                      */
-                    
-                     return loc;
+                    return loc;
                 }
-                if (loc.segment != Segment.CENTER) { 
+                if (firstLocation.segment == Segment.CENTER && secondLocation.level == 2 &&
+                        secondLocation.segment == loc.segment) { 
+                    //if common neighbour is not Center, we can say that this location is valid.
+                    return loc;
+                }
+                if (secondLocation.segment == Segment.CENTER && firstLocation.level == 2 &&
+                        firstLocation.segment == loc.segment) { 
                     //if common neighbour is not Center, we can say that this location is valid.
                     return loc;
                 }
@@ -511,7 +488,7 @@ public class RudderGame extends Game{
                     for (Location locOpponentNeighbour : opponentPieceNeighbours) {
                         Move move = new Move().doer(player.ID).from(currentLocation).to(locOpponentNeighbour);
                         if(determineMoveType(move) == MoveType.CAPTURE) {
-                            LOGGER.debug("Mandatory move -" + currentLocation + "-" + locOpponentNeighbour);
+                            LOGGER.info("Mandatory move -" + currentLocation + "-" + locOpponentNeighbour);
                             return true;
                         }
                             
@@ -536,6 +513,10 @@ public class RudderGame extends Game{
     }
     public boolean checkMandatoryFlag() {
         return MANDATORY_MOVE_EXIST;
+    }
+
+    public Piece getPiece(Location loc) {
+        return locations.get(loc);
     }
 
 }
