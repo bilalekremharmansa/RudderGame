@@ -7,13 +7,17 @@ import com.bilalekrem.ruddergame.game.Game.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
-import javafx.scene.Scene;
-import javafx.scene.layout.AnchorPane;
+import javafx.fxml.FXML;
+import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.TransferMode;
 
+
 import java.util.List;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -38,144 +42,168 @@ public class RudderGameController {
     //private static final double COEFFICIENT_IN_ANGLES = 53.03;
     private static final int TOTAL_NUMBER_OF_PIECES = 33;
 
+    @FXML
+    ImageView imgFirstPlayer;
+    @FXML
+    Label nameFirstPlayer;
+    @FXML
+    Circle circleFirstPlayer;
+    @FXML
+    ImageView imgSecondPlayer;
+    @FXML
+    Label nameSecondPlayer;
+    @FXML
+    Circle circleSecondPlayer;
+
+    @FXML
+    Pane gamePane;
+
     public RudderGameController() {
+        System.out.println("const");
         game = new RudderGame();
         locations = new HashMap<>(TOTAL_NUMBER_OF_PIECES);
         circles = new HashMap<>(TOTAL_NUMBER_OF_PIECES);
         players = new ArrayList<>(2);
 
         game.initiliazeBoard();
-    }           
+
+        registerPlayer("bilal");
+        registerPlayer("ekrem");
+    }
+    
+    @FXML
+    private void initialize() {
+        System.out.println("init");
+        if(players.size() < 2) 
+            throw new RuntimeException("Not enough players to play");
+
+        Player[] pls = players.stream().toArray(Player[]::new);
+        game.initiliazeGame(pls);
+        
+        final double X = WIDTH/2;
+        final double Y = HEIGHT/2;
+
+        /** Drawing outer circles. These are not Game pieces.*/
+        for (int i = 1; i <= RudderGame.LEVEL; i++) {
+            Circle circle = new Circle(X, Y, (i*COEFFICIENT_STRAIGHT));
+            circle.setFill(Color.TRANSPARENT);
+            circle.setStroke(Color.BLACK);
+            gamePane.getChildren().add(circle);
+        }
+
+        /** mapping locations as locString -> Location for drag and dropping.*/
+        game.getLocations().stream().forEach( loc -> {
+            locations.put(loc.toString(), loc);
+        });
+
+        /** The was not clean, it smelt bad.
+         * It does the same thing just before. Creating Circle objects to represents
+         * Game locations. 
+         */
+        Segment[] segments = Segment.values();
+        for (Segment segment : segments) {
+            if(segment == Segment.CENTER) {
+                Circle center = createCircle(X, Y, RADIUS_OF_CIRCLE, Segment.CENTER, 0);
+                gamePane.getChildren().add(center);
+
+            } else {
+                for (int i = 1; i <= RudderGame.LEVEL; i++) {
+                    Circle circle = createCircle(X, Y, RADIUS_OF_CIRCLE, segment, i);
+    
+                    gamePane.getChildren().add(circle);
+                }
+            }
+        }
+    }
 
     public void registerPlayer(String username) {
         Player player = new Player(players.size(), username);
         players.add(player);
     }
 
-    public Scene loadScene() {
-        if(players.size() < 2) return null;
 
-        Player[] pls = players.stream().toArray(Player[]::new);
-        game.initiliazeGame(pls);        
-
-        AnchorPane root = new AnchorPane();
-        Scene scene = new Scene(root, WIDTH, HEIGHT);
-
-        final double X = WIDTH/2;
-        final double Y = HEIGHT/2;
-
-        for (int i = 1; i <= RudderGame.LEVEL; i++) {
-            Circle circle = new Circle(X, Y, (i*COEFFICIENT_STRAIGHT));
-            circle.setFill(Color.TRANSPARENT);
-            circle.setStroke(Color.BLACK);
-            root.getChildren().add(circle);
-        }
-        
-        Paint fill;
-
-        Location locCenter = new RudderGameLocation(Segment.CENTER, 0);
-        Circle circleCenter = createCircle(X, Y, RADIUS_OF_CIRCLE, 0, 0, 
-                            COLOR_FILL_PIECE_DEFAULT, COLOR_STROKE_PIECE_DEFAULT, locCenter);
-        root.getChildren().add(circleCenter);
-
-        // Segment A-B-C-D
-        Player playerOne = pls[0];
-        fill = playerOne.pieceType == PieceType.LIGHT ? COLOR_FILL_PIECE_LIGHT : COLOR_FILL_PIECE_DARK;
-        for (int i = 0; i < RudderGame.LEVEL ; i++) {
-            double straight = (i+1)*COEFFICIENT_STRAIGHT;
-            double angle = (i+1)*COEFFICIENT_IN_ANGLES;
-
-            /** 
-             * I'm sure that pieces are in order in players.pieces like A1-A2-..B-1-B2..C1....
-             * And I know that pieces are in a sequence list. 
-             * A1 places at index 0, A2 places at index 1 and so on
-             * B1 places at index 4, B2 places at index 5 and so on.
-             * As you understand if I increment index LEVEL times for each Segment, I can reach 
-             * locations at same level.
-             */
-            Location locA = playerOne.pieces.get(i).getLocation();
-            Location locB = playerOne.pieces.get(i+RudderGame.LEVEL).getLocation();
-            Location locC = playerOne.pieces.get(i+RudderGame.LEVEL*2).getLocation();
-            Location locD = playerOne.pieces.get(i+RudderGame.LEVEL*3).getLocation();
-
-            // Segment A
-            Circle circleA = createCircle(X, Y, RADIUS_OF_CIRCLE, 0, -straight, fill, null, locA);
-            // Segment B
-            Circle circleB = createCircle(X, Y, RADIUS_OF_CIRCLE, angle, -angle, fill, null, locB);
-            // Segment C
-            Circle circleC = createCircle(X, Y, RADIUS_OF_CIRCLE, straight, 0, fill, null, locC);
-            // Segment D
-            Circle circleD = createCircle(X, Y, RADIUS_OF_CIRCLE, angle, angle, fill, null, locD);
-                 
-            root.getChildren().add(circleA);
-            root.getChildren().add(circleB);
-            root.getChildren().add(circleC);
-            root.getChildren().add(circleD);
-        }
-
-        // Segment E-F-G-H
-        Player playerTwo = pls[1];
-        fill = playerTwo.pieceType == PieceType.LIGHT ? COLOR_FILL_PIECE_LIGHT : COLOR_FILL_PIECE_DARK;
-        for (int i = 0; i < RudderGame.LEVEL ; i++) {
-            double straight = (i+1)*COEFFICIENT_STRAIGHT;
-            double angle = (i+1)*COEFFICIENT_IN_ANGLES;
-
-            // Explanation of i, i+LEVEL .. is above.
-            Location locE = playerTwo.pieces.get(i).getLocation();
-            Location locF = playerTwo.pieces.get(i+RudderGame.LEVEL).getLocation();
-            Location locG = playerTwo.pieces.get(i+RudderGame.LEVEL*2).getLocation();
-            Location locH = playerTwo.pieces.get(i+RudderGame.LEVEL*3).getLocation();
-
-            // Segment E
-            Circle circleE = createCircle(X, Y, RADIUS_OF_CIRCLE, 0, +straight, fill, null, locE);            
-            // Segment F
-            Circle circleF = createCircle(X, Y, RADIUS_OF_CIRCLE, -angle, angle, fill, null, locF);     
-            // Segment G
-            Circle circleG = createCircle(X, Y, RADIUS_OF_CIRCLE, -straight, 0, fill, null, locG);         
-            // Segment H
-            Circle circleH = createCircle(X, Y, RADIUS_OF_CIRCLE, -angle, -angle, fill, null, locH);
-
-            root.getChildren().add(circleE);
-            root.getChildren().add(circleF);
-            root.getChildren().add(circleG);
-            root.getChildren().add(circleH);
-        }
-
-        // mapping locations for drag and dropping.
-        locations.put(locCenter.toString(), locCenter); // special case
-        circles.put(locCenter.toString(), circleCenter);
-        players.forEach(player->{
-            player.pieces.stream().forEach( piece -> {
-                Location loc = piece.getLocation();
-                locations.put(loc.toString(), loc);
-            });
-        });
-        
-        return scene;
-    }
-
-    private Circle createCircle(double x, double y, double radius, double layoutX,
-                                    double layoutY, Paint fill, Paint stroke, Location loc){
+    /**
+     * Creates Circle objects by using Segment and level parameters. 
+     * After adding maps this objects to circles Map. Also activates dragging 
+     * and dropping events.
+     * 
+     * @param x, coordination of center on x axis
+     * @param y, coordination of center on y axis
+     * @param radius, radius of center
+     * @param segment representis segment of location that assigned to this Circle
+     * @param level representslevel of location that assigned to this Circle
+     */
+    private Circle createCircle(double x, double y, double radius, Segment segment, int level) {
         Circle circle = new Circle(x, y, radius);
+
+        /** Setting layoutX and layoutY */
+        double straight = level*COEFFICIENT_STRAIGHT;
+        double angle = level*COEFFICIENT_IN_ANGLES;
+
+        double layoutX, layoutY;
+
+        // is the code still smelly ? might be a new function ?
+        switch(segment) {
+            case A:
+                layoutX = 0;
+                layoutY = -straight;
+                break;
+            case B:
+                layoutX = angle;
+                layoutY = -angle;
+                break;
+            case C:
+                layoutX = straight;
+                layoutY = 0;
+                break;
+            case D:
+                layoutX = angle;
+                layoutY = angle;
+                break;
+            case E:
+                layoutX = 0;
+                layoutY = +straight;
+                break;
+            case F:
+                layoutX = -angle;
+                layoutY = angle;
+                break;
+            case G:
+                layoutX = -straight;
+                layoutY = 0;
+                break;
+            case H:
+                layoutX = -angle;
+                layoutY = -angle;
+                break;
+            default:
+                layoutX = 0;
+                layoutY = 0;
+                break;
+        }
+
         circle.setLayoutX(layoutX);
         circle.setLayoutY(layoutY);
-        
-        if(fill == null) fill = COLOR_FILL_PIECE_DEFAULT;
-        if(stroke == null) stroke = COLOR_STROKE_PIECE_DEFAULT;
+
+        String location = Location.parseString(segment, level);
+        Piece piece = getPiece(location);
+        Paint fill = getFill(piece);
+        Paint stroke = COLOR_STROKE_PIECE_DEFAULT;
 
         circle.setFill(fill);
         circle.setStroke(stroke);
 
         // It will be used while dragging and dropping to determine source and target location.
-        circle.setAccessibleText(loc.toString());
+        circle.setAccessibleText(location);
 
         activateDragAndDrop(circle);
 
-        circles.put(loc.toString(), circle);
+        circles.put(location, circle);
 
         return circle;
     }
 
+    
     /** Registering listeners to Circle. */
     private void activateDragAndDrop(Circle circle) {
         // src: docs.oracle.com/javafx/2/drag_drop/HelloDragAndDrop.java.html
@@ -236,7 +264,7 @@ public class RudderGameController {
             String locString = circle.getAccessibleText();
             Location loc = locations.get(locString);
             Piece p = game.getPiece(loc);
-            circle.setFill(getPaint(p));
+            circle.setFill(getFill(p));
 
             e.consume();
         });
@@ -268,7 +296,7 @@ public class RudderGameController {
                             capturedCircle.setFill(COLOR_FILL_PIECE_DEFAULT);
                         } 
                         sourceCircle.setFill(COLOR_FILL_PIECE_DEFAULT);
-                        circle.setFill(getPaint(targetPiece));
+                        circle.setFill(getFill(targetPiece));
                     }
                 });
                 success = true;
@@ -291,7 +319,28 @@ public class RudderGameController {
         });
     }
 
-    private Paint getPaint(Piece piece) {
+    /**
+     * @param location Piece's location.
+     * 
+     * @return piece at location.
+     */
+    private Piece getPiece(String location) {
+        Location loc = locations.get(location);
+
+        if(loc == null) return null;
+
+        return game.getPiece(loc);
+    }
+
+    /**
+     * This method determines color of Piece and returns as Paint object for
+     * Circle.setFill
+     * 
+     * @param piece of color to be determined
+     * 
+     * @return color of the piece.
+     */
+    private Paint getFill(Piece piece) {
         if (piece == null) return COLOR_FILL_PIECE_DEFAULT;
         return piece.getType() == PieceType.LIGHT ? COLOR_FILL_PIECE_LIGHT : COLOR_FILL_PIECE_DARK;
     }

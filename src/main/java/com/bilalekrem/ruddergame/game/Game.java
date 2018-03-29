@@ -5,7 +5,9 @@ import com.bilalekrem.ruddergame.util.Location;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 /**
@@ -20,7 +22,7 @@ public abstract class Game {
     Graph board;
     List<Move> moves;
 
-    protected Map<Location, Piece> locations;
+    protected Map<Location, Piece> pieces;
 
     /**
      * Default constructor, constructs collections
@@ -28,7 +30,7 @@ public abstract class Game {
     protected Game() {
         players = new ArrayList<>();
         moves = new ArrayList<>();
-        locations = new HashMap<>();
+        pieces = new HashMap<>();
     }
 
     /** 
@@ -84,6 +86,14 @@ public abstract class Game {
      * @return which player's turn to make a move ?
      */
     abstract protected Player activePlayer();
+
+    /**
+     * @return Assigned all locations in the Game.
+     */
+    public Set<Location> getLocations() {
+        Set<Location> locs = board.getVertices().keySet();
+        return Collections.unmodifiableSet(locs);
+    }
 
     /**
      * Move class represents players moves in a game 'from' one place 'to' another.
@@ -172,9 +182,9 @@ public abstract class Game {
          */
         public void setLocation(Location location) {
             Location previousLocation = this.location;
-            if(previousLocation != null) locations.put(previousLocation, null);
+            if(previousLocation != null) pieces.put(previousLocation, null);
             this.location = location;
-            locations.put(location, this);
+            pieces.put(location, this);
         }
 
         /**

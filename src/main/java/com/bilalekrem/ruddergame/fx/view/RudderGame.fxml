@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.shape.Circle?>
+
+<SplitPane dividerPositions="0.24448897795591182" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1000.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/9" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.bilalekrem.ruddergame.fx.controller.RudderGameController">
+  <items>
+      <SplitPane dividerPositions="0.5" orientation="VERTICAL" prefHeight="998.0" prefWidth="150.0">
+        <items>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="300.0">
+               <children>
+                  <ImageView fx:id="imgFirstPlayer" fitHeight="61.0" fitWidth="61.0" layoutX="14.0" layoutY="18.0" pickOnBounds="true" preserveRatio="true" />
+                  <Label fx:id="nameFirstPlayer" layoutX="94.0" layoutY="23.0" text="Label" />
+                  <Circle fx:id="circleFirstPlayer" fill="DODGERBLUE" layoutX="39.0" layoutY="119.0" radius="18.0" stroke="BLACK" strokeType="INSIDE" />
+               </children></AnchorPane>
+            <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="300.0">
+               <children>
+                  <ImageView fx:id="imgSecondPlayer" fitHeight="61.0" fitWidth="61.0" layoutX="14.0" layoutY="18.0" pickOnBounds="true" preserveRatio="true" />
+                  <Label fx:id="nameSecondPlayer" layoutX="94.0" layoutY="23.0" text="Label" />
+                  <Circle fx:id="circleSecondPlayer" fill="DODGERBLUE" layoutX="39.0" layoutY="119.0" radius="18.0" stroke="BLACK" strokeType="INSIDE" />
+               </children>
+            </AnchorPane>
+        </items>
+      </SplitPane>
+      <Pane fx:id="gamePane" minWidth="-Infinity" prefHeight="750.0" prefWidth="750.0" />
+  </items>
+</SplitPane>

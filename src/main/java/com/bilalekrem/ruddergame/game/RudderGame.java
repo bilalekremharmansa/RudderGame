@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Queue;
 import java.util.Set;
+import java.util.Collections;
 import java.util.LinkedList;
 
 public class RudderGame extends Game{
@@ -169,7 +170,7 @@ public class RudderGame extends Game{
                 Location location = new RudderGameLocation(segments[index], j);
                 Piece piece = new Piece(location, playerOne.pieceType);
     
-                locations.put(location, piece); // first call, no prev location
+                pieces.put(location, piece); // first call, no prev location
                 playerOne.pieces.add(piece);
 
             }
@@ -182,7 +183,7 @@ public class RudderGame extends Game{
                 Location location = new RudderGameLocation(segments[index], j);
                 Piece piece = new Piece(location, playerTwo.pieceType);
     
-                locations.put(location, piece); // first call, no prev location
+                pieces.put(location, piece); // first call, no prev location
                 playerTwo.pieces.add(piece);            
             }
             index++;
@@ -212,7 +213,7 @@ public class RudderGame extends Game{
 
         try {
             // Check is target empty or available to move ?
-            boolean isNodeAvailable = locations.get(target) == null ? true : false;
+            boolean isNodeAvailable = pieces.get(target) == null ? true : false;
 
             if(isNodeAvailable) {
                 // If target node and current node are neighbour.
@@ -230,7 +231,7 @@ public class RudderGame extends Game{
                  * captured pieces. 
                  */
                 if(between != null) {
-                    Piece pieceBetweenLocation = locations.get(between);
+                    Piece pieceBetweenLocation = pieces.get(between);
                     // bug fixing, before adding a captured piece, clear data from previous usage.
                     capturedPieces.clear(); 
                     if(pieceBetweenLocation != null && pieceBetweenLocation.type != player.pieceType) {
@@ -398,8 +399,8 @@ public class RudderGame extends Game{
                     filter((opponent) ->opponent.pieces.stream().
                         filter((piece)->piece.location.equals(captured)).findFirst().isPresent()).
                         findFirst().ifPresent((opponent)-> {
-                            Piece toBeRemovedPiece = locations.get(captured);
-                            locations.put(captured, null); 
+                            Piece toBeRemovedPiece = pieces.get(captured);
+                            pieces.put(captured, null); 
                             opponent.pieces.remove(toBeRemovedPiece);
                             
                             // If captured a piece, we had to be able to locate the piece
@@ -477,7 +478,7 @@ public class RudderGame extends Game{
             for (Location neighbour : neighbours) {
                 // if there is no Piece at Location neigbour, then this move type is
                 // MoveType.MOVE which is not what we look it for.
-                Piece pieceAtLocationNeighbour = locations.get(neighbour);
+                Piece pieceAtLocationNeighbour = pieces.get(neighbour);
                 if(pieceAtLocationNeighbour == null) continue;
                 // if pieceAtLocationNeighbour is Player's piece, then continue.
                 if(pieceAtLocationNeighbour.type == player.pieceType) continue;
@@ -516,7 +517,7 @@ public class RudderGame extends Game{
     }
 
     public Piece getPiece(Location loc) {
-        return locations.get(loc);
+        return pieces.get(loc);
     }
 
 }

@@ -73,12 +73,12 @@ public class RudderGameTest {
         game.initiliazeBoard();
                 
         // be aware, created a RudderGameLocation instance not a Location.
-        boolean available1 = game.locations.get(loca1) == null ? true : false;
+        boolean available1 = game.pieces.get(loca1) == null ? true : false;
         assertEquals(true, available1);
 
         game.initiliazeGame(p1, p2);
 
-        boolean available2 = game.locations.get(loca1) == null ? true : false;
+        boolean available2 = game.pieces.get(loca1) == null ? true : false;
         assertEquals(false, available2);
     }
 
@@ -100,7 +100,7 @@ public class RudderGameTest {
         assertEquals(MoveType.CAPTURE, game.determineMoveType(move2));
         game.move(move2);
         assertEquals(MoveType.NONE, game.determineMoveType(move2));
-        boolean available2 = game.locations.get(loccenter) == null ? true : false;
+        boolean available2 = game.pieces.get(loccenter) == null ? true : false;
         assertEquals(true, available2);
         
         // p1's turn, there is a mandatory move, it must be a2 to center
