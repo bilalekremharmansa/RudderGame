@@ -8,6 +8,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
@@ -17,7 +18,6 @@ import javafx.scene.input.TransferMode;
 
 
 import java.util.List;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -59,7 +59,6 @@ public class RudderGameController {
     Pane gamePane;
 
     public RudderGameController() {
-        System.out.println("const");
         game = new RudderGame();
         locations = new HashMap<>(TOTAL_NUMBER_OF_PIECES);
         circles = new HashMap<>(TOTAL_NUMBER_OF_PIECES);
@@ -73,7 +72,6 @@ public class RudderGameController {
     
     @FXML
     private void initialize() {
-        System.out.println("init");
         if(players.size() < 2) 
             throw new RuntimeException("Not enough players to play");
 
@@ -203,7 +201,14 @@ public class RudderGameController {
         return circle;
     }
 
-    
+    private void gameOver() {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Game is over!");
+        alert.setHeaderText("It's over.");
+        alert.setContentText("This is done.");
+        alert.showAndWait();   
+    }
+
     /** Registering listeners to Circle. */
     private void activateDragAndDrop(Circle circle) {
         // src: docs.oracle.com/javafx/2/drag_drop/HelloDragAndDrop.java.html
@@ -252,7 +257,7 @@ public class RudderGameController {
                         circle.setFill(COLOR_FILL_PIECE_NOT_AVALIABLE);
                     else
                         circle.setFill(COLOR_FILL_PIECE_AVALIABLE);
-                });;
+                });
             }
 
             e.consume();
@@ -284,20 +289,12 @@ public class RudderGameController {
 
                     String targetLoc = circle.getAccessibleText();
                     Location targetLocation = locations.get(targetLoc);
-                    Piece targetPiece = game.getPiece(targetLocation);
 
                     Move move = game.new Move().doer(player.ID).from(sourceLocation).to(targetLocation);
 
                     boolean result = game.move(move);
 
-                    if(result) {
-                        if(move.type == MoveType.CAPTURE) {
-                            Circle capturedCircle = circles.get(move.captured.toString());
-                            capturedCircle.setFill(COLOR_FILL_PIECE_DEFAULT);
-                        } 
-                        sourceCircle.setFill(COLOR_FILL_PIECE_DEFAULT);
-                        circle.setFill(getFill(targetPiece));
-                    }
+                    if(result) move(move);
                 });
                 success = true;
             }
@@ -317,6 +314,34 @@ public class RudderGameController {
 
             e.consume();
         });
+    }
+
+    /**
+     * This method invokes to notify a player with a new move. However, it's type property
+     * needs to be assigned a value. If type == null, then there will be no updating UI. At
+     * least it will be a MOVE or CAPTURE.
+     * 
+     * @return true if user interface get updates. Unless, false.
+     */
+    boolean move(Move move) {
+        if(move.type == null || move.type == MoveType.NONE) return false;
+
+        if(move.type == MoveType.CAPTURE) {
+            Circle capturedCircle = circles.get(move.captured.toString());
+            capturedCircle.setFill(COLOR_FILL_PIECE_DEFAULT);
+        } 
+        Circle source = circles.get(move.from.toString());
+        Circle target = circles.get(move.to.toString());
+        Piece targetPiece = game.getPiece(move.to);
+        source.setFill(COLOR_FILL_PIECE_DEFAULT);
+        target.setFill(getFill(targetPiece));
+
+        for (Player p : players) {
+            if ( game.isDefeated(p) ) {
+                gameOver();
+            }
+        }
+        return true;
     }
 
     /**
