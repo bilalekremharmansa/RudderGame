@@ -11,5 +11,4 @@ public class AppTest {
         String[] args = {};
         App.main(args);
     }
-
 }

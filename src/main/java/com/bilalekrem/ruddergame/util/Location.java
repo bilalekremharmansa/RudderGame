@@ -1,5 +1,12 @@
 package com.bilalekrem.ruddergame.util;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+
+
+
 /**
  * Location class will be a bridge between Node class and Piece class
  * Just wanted to separate Node and Piece. 
@@ -8,13 +15,22 @@ package com.bilalekrem.ruddergame.util;
  * 
  * @author Bilal Ekrem Harmansa
  */
+/** baeldung.com/jackson-inheritance */
+@JsonTypeInfo(
+  use = JsonTypeInfo.Id.NAME, 
+  include = JsonTypeInfo.As.PROPERTY, 
+  property = "type")
+@JsonSubTypes({ 
+  @Type(value = RudderGameLocation.class, name = "ruddergame"), 
+})
 public class Location {
     public final Segment segment;
     public final int level;
 
     protected int hash;
     
-    public Location(Segment segment, int level) {
+    public Location(@JsonProperty("segment") Segment segment, 
+                    @JsonProperty("level") int level) {
         this.segment = segment;
         this.level = level;
 

@@ -1,7 +1,10 @@
 package com.bilalekrem.ruddergame.game;
 
+import com.bilalekrem.ruddergame.game.Game.Move.MoveType;
 import com.bilalekrem.ruddergame.util.Graph;
 import com.bilalekrem.ruddergame.util.Location;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
@@ -24,6 +27,10 @@ public abstract class Game {
 
     protected Map<Location, Piece> pieces;
 
+    public enum GameType { 
+        RUDDER, BLABLA
+    }
+
     /**
      * Default constructor, constructs collections
      */
@@ -37,7 +44,7 @@ public abstract class Game {
      * Each game can build a game board in its way. To make
      * that happen this method marked as abstract.
      */
-    abstract protected Graph initiliazeBoard();
+    abstract public Graph initiliazeBoard();
 
     /** 
      * It should call after initiliazeGame(). When board is ready
@@ -45,7 +52,7 @@ public abstract class Game {
      * preparation before game starts.
      *
      */
-    abstract protected void initiliazeGame(Player... players);
+    abstract public void initiliazeGame(Player... players);
 
   
     /**
@@ -66,7 +73,7 @@ public abstract class Game {
      * 
      * @return returns move type of given move object as parameter.
      */
-    abstract protected MoveType determineMoveType(Move move);
+    abstract public MoveType determineMoveType(Move move);
 
     /**
      * move(Move) method performs the necessary operations when user make a
@@ -77,7 +84,7 @@ public abstract class Game {
      * @return result of this operation, If this Move is valid and made succesfully
      * returns true, otherwise returns false. 
      */
-    abstract protected boolean move(Move move);
+    abstract public boolean move(Move move);
 
     /**
      * After a player makes a move, if he does not capture opponents one of the piece
@@ -85,7 +92,7 @@ public abstract class Game {
      * We expected from this method that 
      * @return which player's turn to make a move ?
      */
-    abstract protected Player activePlayer();
+    abstract public Player activePlayer();
 
     /**
      * @return Assigned all locations in the Game.
@@ -95,20 +102,53 @@ public abstract class Game {
         return Collections.unmodifiableSet(locs);
     }
 
+     /**
+     * @return unmodiable player list.
+     */
+    public List<Player> getPlayers() {
+        return Collections.unmodifiableList(players);
+    }
+
     /**
      * Move class represents players moves in a game 'from' one place 'to' another.
      * 
+     * Move class modified as static class. Jackson binder could not create a Move object
+     * without a Game instance. This is the rule of Java, non static class only can
+     * instantinate from outer class instance. However, I think that did not affect
+     * at all. Move does not have to use Game class fields so changing as static do
+     * not affect badly.
+     * 
      * @author Bilal Ekrem Harmansa
      */
-    public static enum MoveType {
-        MOVE, CAPTURE, NONE
-    }
-    public class Move {
+    
+    public static class Move {
+        public enum MoveType {
+            MOVE, CAPTURE, NONE
+        }
         public int doerID; // the player who does the move
         public Location from; // constructed segment-level
         public Location to; // constructed segment-level
         public Location captured; // captured opponents piece location
         public MoveType type;
+
+        /** default consturctor */
+        public Move() {
+
+        }
+
+        /** JSON deserialization */
+        @JsonCreator
+        private Move(@JsonProperty("doer") int doerID,
+                     @JsonProperty("from") Location from,
+                     @JsonProperty("to") Location to,
+                     @JsonProperty("captured") Location captured,
+                     @JsonProperty("moveType") MoveType type) {
+            this.doerID = doerID;
+            this.from = from;
+            this.to = to;
+            this.captured = captured;
+            this.type =type;
+        }
 
         public Move doer(int ID){
             this.doerID = ID;
@@ -142,9 +182,7 @@ public abstract class Game {
 
         @Override
         public String toString() {
-            String playerName = players.stream().filter( (p) -> p.ID == doerID).findFirst().map( (p) -> p.name).orElse("Unknown player");
-            return playerName + "moved a piece: " + 
-                    from.toString() + "-->" + to.toString();
+            return doerID + "moved a piece: " + from.toString() + "-->" + to.toString();
         }
     }
 

@@ -24,8 +24,18 @@
             <AppenderRef ref="Console"/>
         </Root>
 
-        <Logger name="com.bilalekrem.ruddergame.net" level="INFO" additivity="false" >
+        <Logger name="com.bilalekrem.ruddergame.net.Server" level="FATAL" additivity="false" >
             <AppenderRef ref="RollingFileAppender"/>
+            <AppenderRef ref="Console"/>
+
+        </Logger>
+        <Logger name="com.bilalekrem.ruddergame.net.Client" level="FATAL" additivity="false" >
+            <AppenderRef ref="RollingFileAppender"/>
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="com.bilalekrem.ruddergame.net.GameSession" level="FATAL" additivity="false" >
+            <AppenderRef ref="RollingFileAppender"/>
+            <AppenderRef ref="Console"/>
         </Logger>
     </Loggers>
 </Configuration>

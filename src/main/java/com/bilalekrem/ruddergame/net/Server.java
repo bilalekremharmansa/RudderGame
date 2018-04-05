@@ -1,14 +1,13 @@
 package com.bilalekrem.ruddergame.net;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import com.bilalekrem.ruddergame.net.MatchmakingFactory.MatchmakingType;
+import com.bilalekrem.ruddergame.game.Game.GameType;
+import com.bilalekrem.ruddergame.net.Message.MessageType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,64 +63,55 @@ public class Server {
      * @param type each game has different Matchmaking rules and has
      * different Sessions, determine to correct one using this param.
      */
-    public void welcome(MatchmakingType type) {
+    public void welcome(GameType type) {
         Matchmaking m = MatchmakingFactory.create(type, this);
         m.start();
 
         try {
-            int ID =  0;
+            /** IDs are in 0-9 is reserved for servers. */
+            int clientID = 10;
+            Message welcomeMessage = new Message(0, MessageType.CONNECT, null);
             while(!this.server.isClosed()) {
                 Socket clientSocket = server.accept();
-                ClientListener client = new ClientListener(ID, clientSocket);
-                ID++;
+                ClientListener client = new ClientListener(clientID, clientSocket);
+                client.send(welcomeMessage);
+                clientID++;
                 queue.add(client);
+
+                LOGGER.info("Client is connected to Server");
+
+                Thread.sleep(1000);
             }
         } catch(IOException ex ){
-            LOGGER.error("I/O error occurs while waiting for a client.");
+            LOGGER.fatal("I/O error occurs while waiting for a client.");
+        } catch(InterruptedException ex ){
+            LOGGER.error("Thread could not interrupted.");
+        }finally{
+            // if server is closed or stop listening port, stop thread working.
+            m.stop();
         }
-        
-        // if server is closed or stop listening port, stop thread working.
-        m.stop();
+    }
+
+    public void stop() {
+        try {
+            if(server != null && !server.isClosed()) server.close();
+        }catch(IOException ex) {
+            LOGGER.error("Server could not stopped. Current state is {}", server.isClosed());
+        }
     }
 
     /**
      * This class contains information about clients socket and
      * uses in GameSession to ensure communication between Server and Client.
      */
-    class ClientListener extends ServerThread{
+    class ClientListener extends Client{
         /** Clients socket and streams to write and read from Client.*/
         final int ID;
-        final Socket socket; 
-        final ObjectOutputStream os;
-        final ObjectInputStream is;
 
-        private ClientListener(int ID, Socket socket) {
+        public ClientListener(int ID, Socket socket) {
+            super(socket);
             this.ID = ID;
-            this.socket = socket;
-            
-            ObjectOutputStream tempOS = null;
-            ObjectInputStream tempIS = null;
-            try{
-                tempOS = new ObjectOutputStream(socket.getOutputStream());
-                tempIS = new ObjectInputStream(socket.getInputStream());
-            }catch(IOException ex) {
-                LOGGER.error("Client {}:{} stream could not be created", 
-                                                socket.getInetAddress(), socket.getPort() );
-            }
-
-            os = tempOS;
-            is = tempIS;
-
         }
-
-		@Override
-		public void run() {
-            /** run until before calling stop() and client is connected  */
-			while(run && socket.isConnected()) {
-                // MESSAGE 
-            }
-		}
-        
         
     }
 

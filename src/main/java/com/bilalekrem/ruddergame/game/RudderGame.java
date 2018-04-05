@@ -1,5 +1,6 @@
 package com.bilalekrem.ruddergame.game;
 
+import com.bilalekrem.ruddergame.game.Game.Move.MoveType;
 import com.bilalekrem.ruddergame.util.Graph;
 import com.bilalekrem.ruddergame.util.Segment;
 import com.bilalekrem.ruddergame.util.Location;
@@ -11,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Queue;
 import java.util.Set;
-import java.util.Collections;
 import java.util.LinkedList;
 
 public class RudderGame extends Game{
@@ -149,11 +149,16 @@ public class RudderGame extends Game{
 
         playerOne = players[0];
         playerOne.reset();
-        playerOne.pieceType = Game.PieceType.LIGHT;
 
         playerTwo = players[1];
         playerTwo.reset();
-        playerTwo.pieceType = Game.PieceType.DARK;
+        
+        /** If piece type is not default for one of the users. Give a default
+         * defualt piece type's. */
+        if(playerOne.pieceType == null || playerTwo.pieceType == null) {
+            playerOne.pieceType = Game.PieceType.LIGHT;
+            playerTwo.pieceType = Game.PieceType.DARK;
+        } 
 
         this.players.add(playerOne);
         this.players.add(playerTwo);

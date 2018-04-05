@@ -1,6 +1,10 @@
 package com.bilalekrem.ruddergame.net;
 
 import com.bilalekrem.ruddergame.net.Server.ClientListener;
+import com.bilalekrem.ruddergame.game.Game.GameType;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class waits for players to join and match them into a game.
@@ -11,6 +15,8 @@ import com.bilalekrem.ruddergame.net.Server.ClientListener;
  * @author Bilal Ekrem Harmansa 
  */
 public abstract class Matchmaking extends ServerThread {
+    private static final Logger LOGGER = LogManager.getLogger(Matchmaking.class);
+
     private Server server;
 
     /** In constructor, registering Server to Matchmakin that
@@ -20,14 +26,6 @@ public abstract class Matchmaking extends ServerThread {
         super();
         this.server = server;
     }
-
-    /**
-     * Each game are in a game session in Server. Each game 
-     * has different game sessions. Their behaviour might be
-     * different from the others. Thats way each Matchmaking class
-     * creates its method body for this method. 
-     */
-    abstract GameSession generateSession(ClientListener... clients);
 
     /** 
      * Each game has different rules and, also, there might be
@@ -47,13 +45,24 @@ public abstract class Matchmaking extends ServerThread {
         int requiredSize = numberOfRequiredPlayers();
         ClientListener[] clients = new ClientListener[requiredSize];
         int index = 0;
+        
+        int sessionID = 1;
         while(run) {
             if(!server.queue.isEmpty() && index < requiredSize) {
                 ClientListener head = server.queue.poll(); 
                 clients[index++] = head;
-            }else {// clients.size == requiredSize
-                GameSession session = generateSession(clients);
-                // TODO do something in here.
+            }else if(index == requiredSize) {
+                GameSession session = new GameSession(sessionID++);
+                session.initiliaze(clients);
+                /** ClientListener buffer could be cleaned in here. */
+                index = 0;
+                session.start();
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                LOGGER.error("Thread could not interrupted.");
             }
         }
     }
@@ -72,11 +81,8 @@ public abstract class Matchmaking extends ServerThread {
  * @author Bilal Ekrem Harmansa
  */
 class MatchmakingFactory {
-    public enum MatchmakingType { 
-        RUDDER, BLABLA
-    }
 
-    public static Matchmaking create(MatchmakingType type, Server server) {
+    public static Matchmaking create(GameType type, Server server) {
         switch (type) {
             case RUDDER:
                 return new RudderGameMatchmaking(server);

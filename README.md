@@ -1,1 +1,1 @@
-Implementation of Rudder Game. Applicaiton of TCP-Socker programming
+Implementation of Rudder Game. Applicaiton of TCP-Socket programming

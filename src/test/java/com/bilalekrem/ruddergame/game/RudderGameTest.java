@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.bilalekrem.ruddergame.game.Game.*;
+import com.bilalekrem.ruddergame.game.Game.Move.MoveType;
 import com.bilalekrem.ruddergame.util.*;
 import com.bilalekrem.ruddergame.util.Graph.NoSuchNodeException;
 
@@ -88,7 +89,7 @@ public class RudderGameTest {
         game.initiliazeGame(p1, p2);
 
         // level 1 to center, now, p2's turn
-        Move move1 = game.new Move().doer(p1.ID).from(loca1).to(loccenter); 
+        Move move1 = new Move().doer(p1.ID).from(loca1).to(loccenter); 
         assertEquals(MoveType.MOVE, game.determineMoveType(move1));
 
         // level 1 to center is not acceptable
@@ -96,7 +97,7 @@ public class RudderGameTest {
         assertEquals(MoveType.NONE, game.determineMoveType(move1));
 
         // player 2 make a move e1 to a1, p1's piece is captured. 
-        Move move2 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        Move move2 = new Move().doer(p2.ID).from(loce1).to(loca1); 
         assertEquals(MoveType.CAPTURE, game.determineMoveType(move2));
         game.move(move2);
         assertEquals(MoveType.NONE, game.determineMoveType(move2));
@@ -106,7 +107,7 @@ public class RudderGameTest {
         // p1's turn, there is a mandatory move, it must be a2 to center
         // but we first try b1 to center. However we will not be able to move
         // as you know we test determineMoveType method so we dont care
-        Move move3 = game.new Move().doer(p1.ID).from(locb1).to(loccenter); 
+        Move move3 = new Move().doer(p1.ID).from(locb1).to(loccenter); 
         assertEquals(MoveType.MOVE, game.determineMoveType(move3));
 
     }
@@ -117,25 +118,25 @@ public class RudderGameTest {
         game.initiliazeGame(p1, p2);
 
         // move a1 to center by p1
-        Move move1 = game.new Move().doer(p1.ID).from(loca1).to(loccenter); 
+        Move move1 = new Move().doer(p1.ID).from(loca1).to(loccenter); 
         boolean result1 = game.move(move1);
         assertEquals(true, result1);
 
         // move a1 to center by p1, which there is no Piece
         // at a1 anymore
-        Move move2 = game.new Move().doer(p1.ID).from(loca1).to(loccenter); 
+        Move move2 = new Move().doer(p1.ID).from(loca1).to(loccenter); 
         boolean result2 = game.move(move2);
         assertEquals(false, result2);
 
         // move e1 to a1 by p1, p1 is not owner of e1 and p2's turn now.
         // p1 can not make a move.
-        Move move3 = game.new Move().doer(p1.ID).from(loce1).to(loca1); 
+        Move move3 = new Move().doer(p1.ID).from(loce1).to(loca1); 
         boolean result3 = game.move(move3);
         assertEquals(false, result3);
         assertEquals(false, game.checkMandatoryFlag());
 
         // move e1 to a1 by p2, valid move
-        Move move4 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        Move move4 = new Move().doer(p2.ID).from(loce1).to(loca1); 
         boolean result4 = game.move(move4);
         assertEquals(true, result4);
         // only assings if result is true
@@ -144,7 +145,7 @@ public class RudderGameTest {
 
         // try to move b2 to center(Type.MOVE), but there is mandatory
         // a2 to center
-        Move move5 = game.new Move().doer(p1.ID).from(locb2).to(loccenter); 
+        Move move5 = new Move().doer(p1.ID).from(locb2).to(loccenter); 
         boolean result5 = game.move(move5);
         assertEquals(false, result5);
         assertEquals(null, move5.type);
@@ -156,15 +157,15 @@ public class RudderGameTest {
         // now p2's turn. p2 move e1 to a1(captured center), and p2 STILL
         // can make a move. Because p2 can capture one more piece by moving
         // a1 to a3. Lets see.
-        Move move6 = game.new Move().doer(p1.ID).from(loca2).to(loccenter); 
+        Move move6 = new Move().doer(p1.ID).from(loca2).to(loccenter); 
         boolean result6 = game.move(move6);
-        Move move7 = game.new Move().doer(p2.ID).from(locf1).to(loce1); 
+        Move move7 = new Move().doer(p2.ID).from(locf1).to(loce1); 
         boolean result7 = game.move(move7);
-        Move move8 = game.new Move().doer(p1.ID).from(locd1).to(locf1); 
+        Move move8 = new Move().doer(p1.ID).from(locd1).to(locf1); 
         boolean result8 = game.move(move8);
-        Move move9 = game.new Move().doer(p2.ID).from(locg1).to(loce1); 
+        Move move9 = new Move().doer(p2.ID).from(locg1).to(loce1); 
         boolean result9 = game.move(move9);
-        Move move10 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        Move move10 = new Move().doer(p2.ID).from(loce1).to(loca1); 
         boolean result10 = game.move(move10);
         assertEquals(true, result6);
         assertEquals(true, result7);
@@ -178,29 +179,29 @@ public class RudderGameTest {
         game.initiliazeBoard();
         game.initiliazeGame(p1, p2);
         
-        Move move1 = game.new Move().doer(p1.ID).from(loca1).to(loccenter); 
+        Move move1 = new Move().doer(p1.ID).from(loca1).to(loccenter); 
         boolean result1 = game.move(move1);
         assertEquals(true, result1);
         
-        move1 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        move1 = new Move().doer(p2.ID).from(loce1).to(loca1); 
         result1 = game.move(move1);
         
-        move1 = game.new Move().doer(p1.ID).from(loca2).to(loccenter); 
+        move1 = new Move().doer(p1.ID).from(loca2).to(loccenter); 
         result1 = game.move(move1);
         
-        move1 = game.new Move().doer(p2.ID).from(locf1).to(loce1); 
+        move1 = new Move().doer(p2.ID).from(locf1).to(loce1); 
         result1 = game.move(move1);
         
-        move1 = game.new Move().doer(p1.ID).from(locd1).to(locf1); 
+        move1 = new Move().doer(p1.ID).from(locd1).to(locf1); 
         result1 = game.move(move1);
         
-        move1 = game.new Move().doer(p2.ID).from(locg1).to(loce1); 
+        move1 = new Move().doer(p2.ID).from(locg1).to(loce1); 
         result1 = game.move(move1);
         
-        move1 = game.new Move().doer(p2.ID).from(loce1).to(loca1); 
+        move1 = new Move().doer(p2.ID).from(loce1).to(loca1); 
         result1 = game.move(move1);
         
-        move1 = game.new Move().doer(p1.ID).from(locc1).to(locd1); 
+        move1 = new Move().doer(p1.ID).from(locc1).to(locd1); 
         result1 = game.move(move1);
         assertEquals(true, result1);
 

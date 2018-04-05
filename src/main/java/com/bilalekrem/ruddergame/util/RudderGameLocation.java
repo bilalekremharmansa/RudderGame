@@ -1,5 +1,8 @@
 package com.bilalekrem.ruddergame.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class RudderGameLocation extends Location{
 
     /**
@@ -8,7 +11,9 @@ public class RudderGameLocation extends Location{
      * do not include level while calculating hashCode.
      * 
      */
-    public RudderGameLocation(Segment segment, int level) {
+    @JsonCreator
+    public RudderGameLocation(@JsonProperty("segment") Segment segment, 
+                                @JsonProperty("level") int level) {
         super(segment, level);
 
         hash=31*segment.ordinal();

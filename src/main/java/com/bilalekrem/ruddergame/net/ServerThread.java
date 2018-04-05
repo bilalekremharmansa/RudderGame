@@ -16,11 +16,11 @@ abstract class ServerThread implements Runnable {
     @Override
     public abstract void run();
 
-    void stop() {
+    public void stop() {
         run = false;
     }
 
-    void start() {
+    public void start() {
         run = true;
         new Thread(this).start();
     }
