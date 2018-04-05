@@ -139,6 +139,11 @@ public class GameSession implements ClientObserver{
                     LOGGER.fatal("VALIDATE PACKAGES! Something went wrong.");
                 }
                 break;
+            case DISCONNECT:
+                /** Stopping ClientListener thread and removes from GameSession */
+                clients.get(message.senderID()).stop();
+                clients.remove(message.senderID());
+                break;
             default: //discard
                 break;
         }

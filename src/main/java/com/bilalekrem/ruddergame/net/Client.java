@@ -89,6 +89,8 @@ public class Client extends ServerThread{
      */
     @Override
     public void run() {
+        if(socket == null) return;
+
         /** run until before calling stop() and client is connected  */
         while(run && socket.isConnected()) {
             try{

@@ -77,6 +77,8 @@ public class RudderGameController implements ClientObserver {
     }
 
     public void start(String name, boolean online) {
+         app.showDialog();
+
         this.player = new Player(-1, name);
         this.ONLINE_MODE = online;
         if(online) {
@@ -87,8 +89,6 @@ public class RudderGameController implements ClientObserver {
             Player[] players = {player, otherPlayer};
             initGameBoardUI(players);
         }
-        
-        
     }
     
     @FXML
@@ -108,7 +108,7 @@ public class RudderGameController implements ClientObserver {
             player = players[0];
             opponent = players[1];
         } else {
-            player = players[1]
+            player = players[1];
             opponent = players[0];
         }
 
@@ -159,6 +159,8 @@ public class RudderGameController implements ClientObserver {
                 }
             }
         }
+
+        app.closeDialog();
     }
 
     private void gameOver() {
@@ -166,7 +168,15 @@ public class RudderGameController implements ClientObserver {
         alert.setTitle("Game is over!");
         alert.setHeaderText("It's over.");
         alert.setContentText("This is done.");
-        alert.showAndWait();   
+        alert.showAndWait();
+
+        if(ONLINE_MODE) {
+            Message disconnect = new Message(player.ID, MessageType.DISCONNECT, null);
+            app.clientInstance().send(disconnect);
+            app.clientInstance().stop();
+        }
+
+        app.close();
     }
 
     @Override
@@ -193,6 +203,10 @@ public class RudderGameController implements ClientObserver {
                 if(result ){
                     runOnGUI(() -> move(move));
                 }
+                break;
+            case DISCONNECT:
+                app.clientInstance().stop();
+                gameOver();
                 break;
             default:
                 break;

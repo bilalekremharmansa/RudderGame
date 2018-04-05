@@ -25,7 +25,7 @@ public class MessageParserTest {
         mapper = new ObjectMapper();
     }
 
-    @Test
+    @Ignore
     public void testParserWrite(){
         try {
             String test = "hey";
@@ -43,7 +43,7 @@ public class MessageParserTest {
 
 
     }
-    @Test
+    @Ignore
     public void testParserRead(){
        
         try {   
@@ -62,7 +62,7 @@ public class MessageParserTest {
 
     }
 
-    @Test
+    @Ignore
     public void testParserLocation(){
        
         try {
