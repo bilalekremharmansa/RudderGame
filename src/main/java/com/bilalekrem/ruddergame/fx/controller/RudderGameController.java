@@ -17,6 +17,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.ButtonType;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.input.Dragboard;
@@ -24,6 +25,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.TransferMode;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.HashMap;
 
 public class RudderGameController implements ClientObserver {
@@ -66,10 +68,16 @@ public class RudderGameController implements ClientObserver {
     Pane gamePane;
 
     public RudderGameController() {
-        game = new RudderGame();
-        game.initiliazeBoard();
         locations = new HashMap<>(TOTAL_NUMBER_OF_PIECES);
         circles = new HashMap<>(TOTAL_NUMBER_OF_PIECES);
+        newGame();
+    }
+
+    private void newGame() {
+        game = new RudderGame();
+        game.initiliazeBoard();
+        locations.clear();
+        circles.clear();
     }
 
     public void setApplication(RudderGameApp app) {
@@ -163,20 +171,48 @@ public class RudderGameController implements ClientObserver {
         app.closeDialog();
     }
 
-    private void gameOver() {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Game is over!");
-        alert.setHeaderText("It's over.");
-        alert.setContentText("This is done.");
-        alert.showAndWait();
+    private void gameOver(boolean win) {
+        String title = win ? "VICTORY" : "DEFEATED";
+        String header = "The winner is ---> " ;
+        String content = "Do you want to play one more time ?";
 
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        
+        Paint paint;
+        if(win) {
+            paint = player.pieceType == PieceType.DARK ? COLOR_FILL_PIECE_DARK : COLOR_FILL_PIECE_LIGHT;
+        }else {
+            paint = player.pieceType == PieceType.DARK ? COLOR_FILL_PIECE_LIGHT : COLOR_FILL_PIECE_DARK;
+        }
+        Circle winner = new Circle(RADIUS_OF_CIRCLE);
+        winner.setFill(paint);
+        winner.setStroke(COLOR_STROKE_PIECE_DEFAULT);
+        alert.setGraphic(winner);
+
+        alert.getButtonTypes().clear();
+        alert.getButtonTypes().addAll(ButtonType.YES, ButtonType.NO);
+
+        disconnect();
+        
+        Optional<ButtonType> option = alert.showAndWait();
+        if (option.get() == ButtonType.YES) {
+            app.showGameBoard(player.name, ONLINE_MODE);
+        } else { // (option.get() == ButtonType.CANCEL) 
+            
+            app.close();
+        } 
+
+    }
+
+    private void disconnect() {
         if(ONLINE_MODE) {
             Message disconnect = new Message(player.ID, MessageType.DISCONNECT, null);
             app.clientInstance().send(disconnect);
             app.clientInstance().stop();
         }
-
-        app.close();
     }
 
     @Override
@@ -206,7 +242,7 @@ public class RudderGameController implements ClientObserver {
                 break;
             case DISCONNECT:
                 app.clientInstance().stop();
-                gameOver();
+                gameOver(true);
                 break;
             default:
                 break;
@@ -258,7 +294,7 @@ public class RudderGameController implements ClientObserver {
 
         for (Player p : game.getPlayers()) {
             if ( game.isDefeated(p) ) {
-                gameOver();
+                gameOver(p != player);
             }
         }
         return true;
